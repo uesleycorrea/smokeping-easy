@@ -1,0 +1,685 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>smokeping-easy</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📡</text></svg>" />
+<link rel="stylesheet" href="/style.css" />
+<script defer src="/js/i18n.js"></script>
+<script defer src="/js/api.js"></script>
+<script defer src="/js/targets.js"></script>
+<script defer src="/js/analyzer.js"></script>
+<script defer src="/js/settings.js"></script>
+<script defer src="/js/about.js"></script>
+<script
+  defer
+  src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"
+  integrity="sha384-Sse/HDqcypGpyTDpvZOJNnG0TT3feGQUkF9H+mnRvic+LjR+K1NhTt8f51KIQ3v3"
+  crossorigin="anonymous"></script>
+<script
+  defer
+  src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"
+  integrity="sha384-9Ax3MmS9AClxJyd5/zafcXXjxmwFhZCdsT6HJoJjarvCaAkJlk5QDzjLJm+Wdx5F"
+  crossorigin="anonymous"></script>
+
+<div x-cloak x-data="{
+    tab: 'targets',
+    online: true,
+    async init() {
+      try { await Api.me(); } catch (e) { return; }
+      // Keep the backend language (used for Telegram + AI) in sync with the UI.
+      Api.saveAppSettings({ language: $store.i18n.lang }).catch(() => {});
+      this.pollStatus();
+      setInterval(() => this.pollStatus(), 30000);
+    },
+    async pollStatus() {
+      try { const s = await Api.status(); this.online = s.status === 'ok'; }
+      catch (e) { this.online = false; }
+    },
+    async logout() { try { await Api.logout(); } catch (e) {} window.location.href = '/index.html'; }
+  }">
+
+  <!-- Toasts -->
+  <div class="toasts" x-cloak>
+    <template x-for="t in $store.toasts.items" :key="t.id">
+      <div class="toast" :class="t.type" @click="$store.toasts.dismiss(t.id)" x-text="t.message"></div>
+    </template>
+  </div>
+
+  <header class="app-header">
+    <div class="inner">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3 8 5-16 3 8h5"/></svg>
+      </span>
+      <div class="title">
+        <span x-text="$store.i18n.t('app.title')"></span>
+      </div>
+
+      <nav class="tabs" style="margin-left:1rem;">
+        <button class="tab" :class="{active: tab==='targets'}" @click="tab='targets'" x-text="$store.i18n.t('nav.targets')"></button>
+        <button class="tab" :class="{active: tab==='analyzer'}" @click="tab='analyzer'" x-text="$store.i18n.t('nav.analyzer')"></button>
+        <button class="tab" :class="{active: tab==='settings'}" @click="tab='settings'" x-text="$store.i18n.t('nav.settings')"></button>
+        <a class="tab" href="/smokeping/smokeping.cgi" target="_blank" rel="noopener noreferrer" x-text="$store.i18n.t('nav.smokeping')"></a>
+        <button class="tab" :class="{active: tab==='about'}" @click="tab='about'" x-text="$store.i18n.t('nav.about')"></button>
+      </nav>
+
+      <span class="header-spacer"></span>
+
+      <span class="badge" :class="online ? 'ok' : 'danger'">
+        <span class="dot"></span>
+        <span x-text="online ? $store.i18n.t('common.online') : $store.i18n.t('common.offline')"></span>
+      </span>
+
+      <select class="lang-select" @change="$store.i18n.setLang($event.target.value); Api.saveAppSettings({ language: $event.target.value }).catch(() => {})" :aria-label="$store.i18n.t('settings.language')">
+        <template x-for="l in $store.i18n.supported" :key="l">
+          <option :value="l" :selected="l === $store.i18n.lang" x-text="$store.i18n.t('lang.' + l)"></option>
+        </template>
+      </select>
+
+      <button class="icon-btn" @click="logout()" x-text="$store.i18n.t('nav.logout')"></button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Targets tab -->
+    <section x-show="tab==='targets'" x-data="targetsApp()" x-init="init()">
+      <div class="spread" style="margin-bottom:1rem;">
+        <h1 x-text="$store.i18n.t('targets.title')"></h1>
+        <button class="btn btn-primary" @click="openCreate()">
+          <span aria-hidden="true">＋</span>
+          <span x-text="$store.i18n.t('targets.add')"></span>
+        </button>
+      </div>
+
+      <div class="card">
+        <template x-if="loading">
+          <div class="loading-block"><span class="spinner"></span> <span x-text="$store.i18n.t('common.loading')"></span></div>
+        </template>
+
+        <template x-if="!loading && targets.length === 0">
+          <div class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3 8 5-16 3 8h5"/></svg>
+            <p x-text="$store.i18n.t('targets.empty')"></p>
+          </div>
+        </template>
+
+        <template x-if="!loading && targets.length > 0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th x-text="$store.i18n.t('targets.label')"></th>
+                  <th x-text="$store.i18n.t('targets.host')"></th>
+                  <th class="num" x-text="$store.i18n.t('targets.latency')"></th>
+                  <th class="num" x-text="$store.i18n.t('targets.loss')"></th>
+                  <th style="text-align:right;" x-text="$store.i18n.t('common.actions')"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="g in groupedTargets()" :key="g.slug">
+                  <template x-for="row in g.rows" :key="row.kind + (row.target ? row.target.id : g.slug)">
+                    <tr :class="{ 'group-row': row.kind === 'group' }">
+                      <template x-if="row.kind === 'group'">
+                        <td colspan="5" x-text="row.label"></td>
+                      </template>
+                      <template x-if="row.kind === 'target'">
+                        <td x-text="row.target.label"></td>
+                      </template>
+                      <template x-if="row.kind === 'target'">
+                        <td class="mono">
+                          <a href="#" class="host-link" @click.prevent="openMtr(row.target)"
+                             :title="$store.i18n.t('mtr.open_hint')" x-text="row.target.host"></a>
+                        </td>
+                      </template>
+                      <template x-if="row.kind === 'target'">
+                        <td class="num" x-html="latencyCell(row.target)"></td>
+                      </template>
+                      <template x-if="row.kind === 'target'">
+                        <td class="num" x-html="lossCell(row.target)"></td>
+                      </template>
+                      <template x-if="row.kind === 'target'">
+                        <td style="text-align:right; white-space:nowrap;">
+                          <button class="btn btn-ghost btn-sm" @click="openGraph(row.target)" x-text="$store.i18n.t('targets.view_graph')"></button>
+                          <button class="btn btn-ghost btn-sm" @click="openEdit(row.target)" x-text="$store.i18n.t('common.edit')"></button>
+                          <button class="btn btn-danger btn-sm" @click="remove(row.target)" x-text="$store.i18n.t('common.delete')"></button>
+                        </td>
+                      </template>
+                    </tr>
+                  </template>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </template>
+      </div>
+
+      <!-- Create/Edit modal -->
+      <template x-if="showModal">
+        <div class="modal-backdrop" @click.self="closeModal()">
+          <div class="modal card" @keydown.escape.window="closeModal()">
+            <h2 x-text="editing ? $store.i18n.t('targets.edit') : $store.i18n.t('targets.add')"></h2>
+            <form @submit.prevent="save()" class="stack">
+              <div class="row">
+                <div class="field">
+                  <label x-text="$store.i18n.t('targets.host')"></label>
+                  <input x-model="form.host" :placeholder="$store.i18n.t('targets.host_ph')" required />
+                  <div class="hint" x-text="$store.i18n.t('targets.host_hint')"></div>
+                </div>
+                <div class="field">
+                  <label x-text="$store.i18n.t('targets.label')"></label>
+                  <input x-model="form.label" :placeholder="$store.i18n.t('targets.label_ph')" />
+                  <div class="hint" x-text="$store.i18n.t('targets.label_hint')"></div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label x-text="$store.i18n.t('targets.group')"></label>
+                  <div style="display:flex; gap:.5rem;">
+                    <select x-model="form.group_id" style="flex:1;">
+                      <template x-for="g in groups" :key="g.id">
+                        <option :value="g.id" x-text="g.name"></option>
+                      </template>
+                    </select>
+                    <button type="button" class="btn btn-ghost" @click="openNewGroup()"
+                            :title="$store.i18n.t('groups.add')" style="padding:.6em .8em; font-size:1.1em; line-height:1;">＋</button>
+                  </div>
+                  <div class="hint" x-text="$store.i18n.t('targets.group_hint')"></div>
+                </div>
+                <div class="field">
+                  <label x-text="$store.i18n.t('targets.cooldown') + ' (' + $store.i18n.t('unit.minutes') + ')'"></label>
+                  <input type="number" min="1" max="1440" x-model.number="form.alert_cooldown_minutes" />
+                  <div class="hint" x-text="$store.i18n.t('targets.cooldown_hint')"></div>
+                </div>
+              </div>
+
+              <h3 style="margin-top:.4rem;" x-text="$store.i18n.t('targets.thresholds')"></h3>
+              <p class="hint" style="margin-top:-.4rem;" x-text="$store.i18n.t('targets.thresholds_hint')"></p>
+              <div class="row">
+                <div class="field">
+                  <label x-text="$store.i18n.t('targets.latency_threshold') + ' (' + $store.i18n.t('unit.ms') + ')'"></label>
+                  <input type="number" min="0" step="0.1" x-model="form.latency_threshold_ms" :placeholder="$store.i18n.t('common.optional')" />
+                  <div class="hint" x-text="$store.i18n.t('targets.latency_threshold_hint')"></div>
+                </div>
+                <div class="field">
+                  <label x-text="$store.i18n.t('targets.loss_threshold') + ' (' + $store.i18n.t('unit.pct') + ')'"></label>
+                  <input type="number" min="0" max="100" step="0.1" x-model="form.loss_threshold_pct" :placeholder="$store.i18n.t('common.optional')" />
+                  <div class="hint" x-text="$store.i18n.t('targets.loss_threshold_hint')"></div>
+                </div>
+              </div>
+
+              <template x-if="formError">
+                <div class="inline-err" x-text="formError"></div>
+              </template>
+
+              <div class="spread" style="margin-top:.5rem;">
+                <button type="button" class="btn btn-ghost" @click="closeModal()" x-text="$store.i18n.t('common.cancel')"></button>
+                <button type="submit" class="btn btn-primary" :disabled="saving">
+                  <template x-if="saving"><span class="spinner"></span></template>
+                  <span x-text="saving ? $store.i18n.t('common.saving') : $store.i18n.t('common.save')"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </template>
+
+      <!-- New group mini-modal (stacked above the target form) -->
+      <template x-if="newGroupModal">
+        <div class="modal-backdrop" style="z-index:70;" @click.self="closeNewGroup()">
+          <div class="modal card" style="max-width:400px;" @keydown.escape.window="closeNewGroup()">
+            <h2 x-text="$store.i18n.t('groups.add')"></h2>
+            <form @submit.prevent="createGroup()" class="stack">
+              <div class="field">
+                <label x-text="$store.i18n.t('groups.name')"></label>
+                <input x-model="newGroupName" :placeholder="$store.i18n.t('targets.group_ph')" autofocus />
+              </div>
+              <div class="spread">
+                <button type="button" class="btn btn-ghost" @click="closeNewGroup()" x-text="$store.i18n.t('common.cancel')"></button>
+                <button type="submit" class="btn btn-primary" :disabled="savingGroup">
+                  <template x-if="savingGroup"><span class="spinner"></span></template>
+                  <span x-text="$store.i18n.t('common.save')"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </template>
+
+      <!-- Graph modal -->
+      <template x-if="graphModal">
+        <div class="modal-backdrop" @click.self="closeGraph()">
+          <div class="modal card" style="max-width:760px;" @keydown.escape.window="closeGraph()">
+            <div class="spread" style="margin-bottom:.6rem;">
+              <h2 style="margin:0;" x-text="graphTarget ? graphTarget.label : ''"></h2>
+              <button class="icon-btn" @click="closeGraph()" x-text="$store.i18n.t('common.close')"></button>
+            </div>
+            <div class="tabs" style="margin-bottom:.8rem;">
+              <template x-for="r in ['3h','30h','10d']" :key="r">
+                <button class="tab" :class="{active: graphRange===r}" @click="setGraphRange(r)" x-text="r"></button>
+              </template>
+            </div>
+            <div class="chart-box"><canvas x-ref="graphCanvas"></canvas></div>
+            <p class="hint" x-show="graphLoading" x-text="$store.i18n.t('common.loading')"></p>
+          </div>
+        </div>
+      </template>
+
+      <!-- MTR modal (on-demand path trace from the server to the target) -->
+      <template x-if="mtrModal">
+        <div class="modal-backdrop" @click.self="closeMtr()">
+          <div class="modal card" style="max-width:820px;" @keydown.escape.window="closeMtr()">
+            <div class="spread" style="margin-bottom:.3rem;">
+              <h2 style="margin:0;">
+                <span x-text="$store.i18n.t('mtr.title')"></span>
+                <span class="muted" style="font-weight:500;" x-text="mtrTarget ? ('· ' + mtrTarget.label) : ''"></span>
+              </h2>
+              <div style="display:flex; gap:.5rem;">
+                <button class="btn btn-ghost btn-sm" @click="runMtr()" :disabled="mtrLoading" x-text="$store.i18n.t('common.retry')"></button>
+                <button class="icon-btn" @click="closeMtr()" x-text="$store.i18n.t('common.close')"></button>
+              </div>
+            </div>
+            <p class="hint" style="margin-top:0;">
+              <span x-text="$store.i18n.t('mtr.subtitle')"></span>
+              <template x-if="mtrData && mtrData.dst">
+                <span class="mono"> — <span x-text="mtrData.src"></span> → <span x-text="mtrData.dst"></span></span>
+              </template>
+            </p>
+
+            <template x-if="mtrLoading">
+              <div class="loading-block"><span class="spinner"></span> <span x-text="$store.i18n.t('mtr.running')"></span></div>
+            </template>
+
+            <template x-if="!mtrLoading && mtrError">
+              <p class="inline-err" x-text="mtrError"></p>
+            </template>
+
+            <template x-if="!mtrLoading && !mtrError && mtrData">
+              <div class="table-wrap">
+                <table>
+                  <thead><tr>
+                    <th style="width:2.5rem;">#</th>
+                    <th x-text="$store.i18n.t('mtr.host')"></th>
+                    <th class="num" x-text="$store.i18n.t('mtr.loss')"></th>
+                    <th class="num" x-text="$store.i18n.t('mtr.avg')"></th>
+                    <th class="num" x-text="$store.i18n.t('mtr.best')"></th>
+                    <th class="num" x-text="$store.i18n.t('mtr.worst')"></th>
+                  </tr></thead>
+                  <tbody>
+                    <template x-for="h in mtrData.hops" :key="h.hop">
+                      <tr>
+                        <td class="num muted" x-text="h.hop"></td>
+                        <td class="mono" :class="{ muted: h.host === '???' }" x-text="h.host"></td>
+                        <td class="num">
+                          <span class="badge" :class="h.loss > 0 ? (h.loss >= 50 ? 'danger' : 'warn') : 'ok'"
+                                x-text="mtrFmt(h.loss) + '%'"></span>
+                        </td>
+                        <td class="num" x-text="mtrFmt(h.avg)"></td>
+                        <td class="num" x-text="mtrFmt(h.best)"></td>
+                        <td class="num" x-text="mtrFmt(h.worst)"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </section>
+
+    <!-- AI Analysis tab (provider/key configured in Settings) -->
+    <section x-show="tab==='analyzer'" x-data="analyzerApp()" x-init="init()">
+      <h1 x-text="$store.i18n.t('analyzer.title')"></h1>
+      <p class="muted" x-text="$store.i18n.t('analyzer.intro')"></p>
+
+      <div class="card">
+        <template x-if="!loading && !aiConfigured">
+          <p class="inline-err" x-text="$store.i18n.t('errors.ai_not_configured')"></p>
+        </template>
+        <div class="row">
+          <div class="field">
+            <label x-text="$store.i18n.t('analyzer.target')"></label>
+            <select x-model="form.target_id">
+              <template x-for="t in targets" :key="t.id">
+                <option :value="t.id" x-text="t.label + ' (' + t.host + ')'"></option>
+              </template>
+            </select>
+          </div>
+          <div class="field" style="max-width:160px;">
+            <label x-text="$store.i18n.t('analyzer.period')"></label>
+            <select x-model="form.range">
+              <option value="3h">3h</option>
+              <option value="30h">30h</option>
+              <option value="10d">10d</option>
+            </select>
+          </div>
+          <div class="field" style="max-width:180px; display:flex; align-items:flex-end;">
+            <button type="button" class="btn btn-primary btn-block" @click="analyze()" :disabled="analyzing || !form.target_id">
+              <template x-if="analyzing"><span class="spinner"></span></template>
+              <span x-text="analyzing ? $store.i18n.t('analyzer.analyzing') : $store.i18n.t('analyzer.analyze')"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 x-text="$store.i18n.t('targets.view_graph')"></h2>
+        <div class="chart-box"><canvas x-ref="chart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <h2 x-text="$store.i18n.t('analyzer.result')"></h2>
+        <template x-if="!result && !analyzing">
+          <p class="muted" x-text="$store.i18n.t('analyzer.no_result')"></p>
+        </template>
+        <template x-if="analyzing">
+          <div class="loading-block"><span class="spinner"></span> <span x-text="$store.i18n.t('analyzer.analyzing')"></span></div>
+        </template>
+        <template x-if="result">
+          <div class="ai-output" x-text="result"></div>
+        </template>
+      </div>
+    </section>
+
+    <!-- Settings tab (the single configuration hub) -->
+    <section x-show="tab==='settings'" x-data="settingsApp()" x-init="init()"
+             x-effect="tab === 'settings' && !loading && loadStatus()">
+      <h1 x-text="$store.i18n.t('settings.title')"></h1>
+
+      <div class="card">
+        <h2 x-text="$store.i18n.t('settings.change_password')"></h2>
+        <form @submit.prevent="changePassword()" class="stack" style="max-width:420px;">
+          <div class="field">
+            <label x-text="$store.i18n.t('settings.current_password')"></label>
+            <input type="password" autocomplete="current-password" x-model="pw.current_password" required />
+          </div>
+          <div class="field">
+            <label x-text="$store.i18n.t('settings.new_password')"></label>
+            <input type="password" autocomplete="new-password" x-model="pw.new_password" required />
+          </div>
+          <div class="field">
+            <label x-text="$store.i18n.t('settings.confirm_password')"></label>
+            <input type="password" autocomplete="new-password" x-model="pw.confirm" required />
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary" :disabled="savingPw">
+              <template x-if="savingPw"><span class="spinner"></span></template>
+              <span x-text="$store.i18n.t('settings.change_password')"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2 x-text="$store.i18n.t('settings.language') + ' / ' + $store.i18n.t('settings.timezone')"></h2>
+        <form @submit.prevent="saveApp()" class="stack" style="max-width:420px;">
+          <div class="field">
+            <label x-text="$store.i18n.t('settings.language')"></label>
+            <select @change="$store.i18n.setLang($event.target.value)">
+              <template x-for="l in $store.i18n.supported" :key="l">
+                <option :value="l" :selected="l === $store.i18n.lang" x-text="$store.i18n.t('lang.' + l)"></option>
+              </template>
+            </select>
+          </div>
+          <div class="field">
+            <label x-text="$store.i18n.t('settings.timezone')"></label>
+            <input x-model="app.timezone" :placeholder="$store.i18n.t('settings.timezone_ph')" />
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary" :disabled="savingApp">
+              <template x-if="savingApp"><span class="spinner"></span></template>
+              <span x-text="$store.i18n.t('common.save')"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" x-show="!loading">
+        <h2 x-text="$store.i18n.t('groups.section')"></h2>
+        <p class="muted" x-text="$store.i18n.t('groups.hint')"></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th x-text="$store.i18n.t('groups.name')"></th>
+              <th class="num" x-text="$store.i18n.t('groups.targets')"></th>
+              <th style="text-align:right;" x-text="$store.i18n.t('common.actions')"></th>
+            </tr></thead>
+            <tbody>
+              <template x-for="g in groups" :key="g.id">
+                <tr>
+                  <td>
+                    <template x-if="editingGroupId !== g.id"><span x-text="g.name"></span></template>
+                    <template x-if="editingGroupId === g.id">
+                      <input x-model="editingGroupName" @keydown.enter.prevent="saveRename(g)" style="max-width:260px;" />
+                    </template>
+                  </td>
+                  <td class="num muted" x-text="g.target_count"></td>
+                  <td style="text-align:right; white-space:nowrap;">
+                    <template x-if="editingGroupId !== g.id">
+                      <span>
+                        <button class="btn btn-ghost btn-sm" @click="startRename(g)" x-text="$store.i18n.t('common.edit')"></button>
+                        <button class="btn btn-danger btn-sm" @click="deleteGroup(g)" :disabled="Number(g.target_count) > 0 || g.is_default === true"
+                                :title="g.is_default ? $store.i18n.t('errors.group_is_default') : (g.target_count > 0 ? $store.i18n.t('errors.group_in_use') : '')" x-text="$store.i18n.t('common.delete')"></button>
+                      </span>
+                    </template>
+                    <template x-if="editingGroupId === g.id">
+                      <span>
+                        <button class="btn btn-primary btn-sm" @click="saveRename(g)" x-text="$store.i18n.t('common.save')"></button>
+                        <button class="btn btn-ghost btn-sm" @click="cancelRename()" x-text="$store.i18n.t('common.cancel')"></button>
+                      </span>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <form @submit.prevent="addGroup()" style="display:flex; gap:.5rem; margin-top:1rem; max-width:420px;">
+          <input x-model="newGroupName" :placeholder="$store.i18n.t('groups.name')" style="flex:1;" />
+          <button type="submit" class="btn btn-primary" :disabled="creatingGroup">
+            <template x-if="creatingGroup"><span class="spinner"></span></template>
+            <span x-text="$store.i18n.t('groups.add')"></span>
+          </button>
+        </form>
+      </div>
+
+      <div class="card" x-show="!loading">
+        <div class="spread">
+          <h2 style="margin:0;" x-text="$store.i18n.t('settings.telegram_section')"></h2>
+          <span class="badge" :class="telegramReady ? 'ok' : 'warn'"
+                x-text="telegramReady ? $store.i18n.t('alerts.configured') : $store.i18n.t('alerts.not_configured')"></span>
+        </div>
+        <p class="muted" x-text="$store.i18n.t('alerts.intro')"></p>
+        <form @submit.prevent="saveTelegram()" class="stack" style="max-width:520px;">
+          <div class="field">
+            <label x-text="$store.i18n.t('alerts.bot_token')"></label>
+            <input type="password" autocomplete="off" x-model="tg.bot_token"
+                   :placeholder="botConfigured ? '••••••••' : $store.i18n.t('alerts.bot_token_ph')" />
+            <div class="hint" x-text="$store.i18n.t('alerts.secret_hint')"></div>
+          </div>
+          <div class="field">
+            <label x-text="$store.i18n.t('alerts.chat_id')"></label>
+            <input type="password" autocomplete="off" x-model="tg.chat_id"
+                   :placeholder="chatConfigured ? '••••••••' : $store.i18n.t('alerts.chat_id_ph')" />
+          </div>
+          <label style="display:flex; align-items:center; gap:.5rem; font-weight:500;">
+            <input type="checkbox" style="width:auto;" x-model="tg.daily_report_enabled" />
+            <span x-text="$store.i18n.t('alerts.daily_report_enabled')"></span>
+          </label>
+          <div class="row" x-show="tg.daily_report_enabled">
+            <div class="field" style="max-width:120px;">
+              <label x-text="$store.i18n.t('alerts.report_time')"></label>
+              <input type="number" min="0" max="23" x-model.number="tg.daily_report_hour" />
+            </div>
+            <div class="field" style="max-width:120px;">
+              <label>&nbsp;</label>
+              <input type="number" min="0" max="59" x-model.number="tg.daily_report_minute" />
+            </div>
+          </div>
+          <div class="spread">
+            <div style="display:flex; gap:.5rem;">
+              <button type="button" class="btn btn-ghost" @click="testTelegram()" :disabled="testing || !telegramReady">
+                <template x-if="testing"><span class="spinner"></span></template>
+                <span x-text="testing ? $store.i18n.t('common.testing') : $store.i18n.t('alerts.test_connection')"></span>
+              </button>
+              <button type="button" class="btn btn-ghost" @click="sendReportNow()" :disabled="sendingReport || !telegramReady">
+                <template x-if="sendingReport"><span class="spinner"></span></template>
+                <span x-text="$store.i18n.t('alerts.send_now')"></span>
+              </button>
+            </div>
+            <button type="submit" class="btn btn-primary" :disabled="savingTelegram">
+              <template x-if="savingTelegram"><span class="spinner"></span></template>
+              <span x-text="$store.i18n.t('common.save')"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" x-show="!loading">
+        <div class="spread">
+          <h2 style="margin:0;" x-text="$store.i18n.t('settings.ai_section')"></h2>
+          <span class="badge" :class="apiKeySet ? 'ok' : 'warn'"
+                x-text="apiKeySet ? $store.i18n.t('alerts.configured') : $store.i18n.t('alerts.not_configured')"></span>
+        </div>
+        <form @submit.prevent="saveAi()" class="stack" style="max-width:520px;">
+          <div class="row">
+            <div class="field">
+              <label x-text="$store.i18n.t('analyzer.provider')"></label>
+              <select x-model="ai.provider" @change="onProviderChange()">
+                <option value="claude" x-text="$store.i18n.t('analyzer.provider_claude')"></option>
+                <option value="openai" x-text="$store.i18n.t('analyzer.provider_openai')"></option>
+              </select>
+            </div>
+            <div class="field">
+              <label x-text="$store.i18n.t('analyzer.api_key')"></label>
+              <input type="password" autocomplete="off" x-model="ai.api_key"
+                     :placeholder="apiKeySet ? '••••••••' : $store.i18n.t('analyzer.api_key_ph')" />
+            </div>
+          </div>
+          <div class="field">
+            <label x-text="$store.i18n.t('analyzer.model')"></label>
+            <div style="display:flex; gap:.5rem;">
+              <select x-model="ai.model" style="flex:1;">
+                <template x-if="!models.length">
+                  <option value="" x-text="ai.model || $store.i18n.t('analyzer.select_model')"></option>
+                </template>
+                <template x-for="m in models" :key="m.id">
+                  <option :value="m.id" x-text="m.name || m.id"></option>
+                </template>
+              </select>
+              <button type="button" class="btn btn-ghost" @click="loadModels()" :disabled="loadingModels">
+                <template x-if="loadingModels"><span class="spinner"></span></template>
+                <span x-text="loadingModels ? $store.i18n.t('analyzer.loading_models') : $store.i18n.t('analyzer.load_models')"></span>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label x-text="$store.i18n.t('settings.analysis_prompt')"></label>
+            <textarea x-model="ai.analysis_prompt" rows="10" style="font-family:var(--mono); font-size:.85rem; line-height:1.5;"></textarea>
+            <div class="hint" x-text="$store.i18n.t('settings.analysis_prompt_hint')"></div>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary" :disabled="savingAi">
+              <template x-if="savingAi"><span class="spinner"></span></template>
+              <span x-text="$store.i18n.t('common.save')"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" x-show="!loading">
+        <h2 x-text="$store.i18n.t('settings.jobs')"></h2>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr>
+                <td x-text="$store.i18n.t('settings.job_poller')"></td>
+                <td><span class="badge" :class="(status && status.poller && status.poller.scheduled) ? 'ok' : ''"
+                      x-text="(status && status.poller && status.poller.scheduled) ? $store.i18n.t('common.enabled') : $store.i18n.t('common.disabled')"></span></td>
+                <td class="muted" x-text="$store.i18n.t('settings.next_run') + ': ' + fmtTime(status && status.poller && status.poller.next_run)"></td>
+              </tr>
+              <tr>
+                <td x-text="$store.i18n.t('settings.job_daily')"></td>
+                <td><span class="badge" :class="(status && status.daily_report && status.daily_report.scheduled) ? 'ok' : ''"
+                      x-text="(status && status.daily_report && status.daily_report.scheduled) ? $store.i18n.t('common.enabled') : $store.i18n.t('common.disabled')"></span></td>
+                <td class="muted" x-text="$store.i18n.t('settings.next_run') + ': ' + fmtTime(status && status.daily_report && status.daily_report.next_run)"></td>
+              </tr>
+              <tr x-show="status && status.last_report">
+                <td x-text="$store.i18n.t('settings.last_run')"></td>
+                <td colspan="2" class="muted">
+                  <span x-text="fmtTime(status && status.last_report && status.last_report.ts)"></span> —
+                  <span x-text="status && status.last_report && status.last_report.status"></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- About tab -->
+    <section x-show="tab==='about'" x-data="aboutApp()" x-init="init()">
+      <h1 x-text="$store.i18n.t('about.title')"></h1>
+
+      <div class="card">
+        <h2 x-text="$store.i18n.t('about.project')"></h2>
+        <p x-text="$store.i18n.t('about.description')"></p>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr><td class="muted" x-text="$store.i18n.t('about.version')"></td><td class="mono" x-text="project.version"></td></tr>
+              <tr><td class="muted" x-text="$store.i18n.t('about.license')"></td>
+                <td><a :href="project.license_url" target="_blank" rel="noopener noreferrer"><span class="badge ok">GPL v3</span></a></td></tr>
+              <tr><td class="muted" x-text="$store.i18n.t('about.repository')"></td>
+                <td><a :href="project.repo" target="_blank" rel="noopener noreferrer" x-text="project.repo"></a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card author-card">
+        <h2 x-text="$store.i18n.t('about.idealized_by')"></h2>
+        <p><strong x-text="author.name"></strong> · <span x-text="author.company"></span></p>
+        <p class="muted" x-text="$store.i18n.t('about.company_desc')"></p>
+        <p><a :href="author.site" target="_blank" rel="noopener noreferrer" x-text="author.site"></a></p>
+      </div>
+
+      <div class="card">
+        <h2 x-text="$store.i18n.t('about.tech')"></h2>
+        <div class="tech-badges">
+          <template x-for="tech in tech" :key="tech.name">
+            <a class="tech-badge" :href="tech.url" target="_blank" rel="noopener noreferrer" x-text="tech.name"></a>
+          </template>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 x-text="$store.i18n.t('about.license_summary')"></h2>
+        <p x-text="$store.i18n.t('about.license_intro')"></p>
+        <ul class="stack" style="margin:0; padding-left:1.2rem;">
+          <li x-text="$store.i18n.t('about.license_p1')"></li>
+          <li x-text="$store.i18n.t('about.license_p2')"></li>
+          <li x-text="$store.i18n.t('about.license_p3')"></li>
+          <li x-text="$store.i18n.t('about.license_p4')"></li>
+        </ul>
+        <p style="margin-top:1rem;"><a :href="project.license_url" target="_blank" rel="noopener noreferrer" x-text="$store.i18n.t('about.license_link')"></a></p>
+      </div>
+
+      <div class="card">
+        <h2 x-text="$store.i18n.t('about.contrib')"></h2>
+        <p x-text="$store.i18n.t('about.contrib_intro')"></p>
+        <p class="muted" x-text="$store.i18n.t('about.contrib_cta')"></p>
+        <div style="display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.5rem;">
+          <a class="btn btn-ghost" :href="issuesUrl" target="_blank" rel="noopener noreferrer" x-text="$store.i18n.t('about.contrib_issue')"></a>
+          <a class="btn btn-ghost" :href="prUrl" target="_blank" rel="noopener noreferrer" x-text="$store.i18n.t('about.contrib_pr')"></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer" class="gpl-badge">
+      <span class="gpl-mark">GPL v3</span>
+      <span x-text="$store.i18n.t('footer.license_badge')"></span>
+    </a>
+  </footer>
+</div>

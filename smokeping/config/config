@@ -1,0 +1,137 @@
+# smokeping-easy — main Smokeping configuration
+# ---------------------------------------------------------------------------
+# This file is copied to /etc/smokeping/config inside the image. Every STATIC
+# section is inlined here so the running config is self-contained. Only the
+# dynamic *** Targets *** section is pulled from /config/Targets, which is the
+# single file the backend rewrites (via config_writer.py) when the user adds,
+# edits or removes monitored hosts.
+#
+# Do NOT put secrets in this file — it is baked into the image and committed.
+# ---------------------------------------------------------------------------
+
+*** General ***
+
+owner    = smokeping-easy
+contact  = admin@example.com
+mailhost = my.mail.host
+# cgiurl is only used to build image URLs in Smokeping's own web UI, which we
+# expose read-only behind nginx at /smokeping/.
+cgiurl   = http://localhost/smokeping/smokeping.cgi
+syslogfacility = local0
+# Run each probe in its own process.
+concurrentprobes = yes
+
+sendmail = /usr/sbin/ssmtp
+imgcache = /var/cache/smokeping
+imgurl   = cache
+datadir  = /data
+piddir   = /var/run/smokeping
+smokemail = /etc/smokeping/smokemail
+tmail    = /etc/smokeping/tmail
+
+*** Alerts ***
+# Alerting is handled by the smokeping-easy backend poller (Telegram + AI),
+# not by Smokeping's built-in mailer. This section is kept minimal but valid.
+to = root@localhost
+from = smokeping-easy@localhost
+
+*** Database ***
+
+step     = 60
+pings    = 20
+
+# consfn mrhb steps total
+AVERAGE  0.5   1  1008
+AVERAGE  0.5  12  4320
+    MIN  0.5  12  4320
+    MAX  0.5  12  4320
+AVERAGE  0.5 144   720
+    MAX  0.5 144   720
+    MIN  0.5 144   720
+
+*** Presentation ***
+
+template = /etc/smokeping/basepage.html
+charset  = utf-8
+
++ charts
+
+menu = Charts
+title = The most interesting destinations
+
+++ stddev
+sorter = StdDev(entries=>4)
+title = Top Standard Deviation
+menu = Std Deviation
+format = Standard Deviation %f
+
+++ max
+sorter = Max(entries=>5)
+title = Top Max Roundtrip Time
+menu = by Max
+format = Max Roundtrip Time %f seconds
+
+++ loss
+sorter = Loss(entries=>5)
+title = Top Packet Loss
+menu = Loss
+format = Packets Lost %f
+
+++ median
+sorter = Median(entries=>5)
+title = Top Median Roundtrip Time
+menu = by Median
+format = Median RTT %f seconds
+
++ overview
+
+width = 600
+height = 50
+range = 10h
+
++ detail
+
+width = 600
+height = 200
+unison_tolerance = 2
+
+"Last 3 Hours"    3h
+"Last 30 Hours"   30h
+"Last 10 Days"    10d
+"Last 360 Days"   360d
+
+*** Probes ***
+
++ FPing
+binary = /usr/sbin/fping
+
++ FPing6
+binary = /usr/sbin/fping
+protocol = 6
+
++ DNS
+binary = /usr/bin/dig
+lookup = google.com
+pings = 5
+step = 300
+
++ TCPPing
+binary = /usr/bin/tcpping
+forks = 10
+offset = random
+pings = 5
+port = 80
+
++ Curl
+binary = /usr/bin/curl
+forks = 5
+offset = 50%
+step = 300
+pings = 5
+urlformat = http://%host%/
+
+*** Slaves ***
+secrets=/etc/smokeping/smokeping_secrets
+
+# Dynamic targets, managed by the smokeping-easy backend.
+@include /config/Targets

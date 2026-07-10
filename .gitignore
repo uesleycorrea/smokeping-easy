@@ -1,0 +1,63 @@
+# --- Secrets & local environment -------------------------------------------
+.env
+*.env
+!.env.example
+
+# Runtime-generated encryption key and secrets — NEVER commit
+secret.key
+**/secret.key
+backend/data/
+**/settings.json
+**/alert_state.json
+**/job_history.json
+**/session_store.json
+**/targets.json
+**/groups.json
+
+# RRD databases (latency history) — never committed
+*.rrd
+**/*.rrd
+
+# TLS material
+*.pem
+*.key.pem
+*.crt
+acme.json
+letsencrypt/
+
+# --- Smokeping runtime data (when bind-mounted for local dev) ---------------
+smokeping/config/site-confs/
+smokeping/config/httpd.conf
+smokeping/config/smokeping_secrets
+smokeping/config/General
+smokeping/config/Alerts
+smokeping/config/Database
+smokeping/config/Presentation
+smokeping/config/Probes
+smokeping/config/Slaves
+smokeping/config/pathnames
+smokeping/config/ssmtp.conf
+data/
+rrd/
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Node / frontend (none expected — no build step, but just in case) ------
+node_modules/
+dist/
+
+# --- OS / editor -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/

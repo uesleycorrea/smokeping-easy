@@ -1,0 +1,60 @@
+# smokeping-easy — optional TLS overlay (Traefik + Let's Encrypt).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
+#
+# Requires in .env:
+#   DOMAIN=monitor.example.com   # a DNS A/AAAA record pointing at this host
+#   ACME_EMAIL=you@example.com    # for Let's Encrypt registration
+#
+# Traefik terminates TLS on :443 (auto-redirect from :80), obtains/renews a
+# certificate via the HTTP-01 challenge, and proxies to the frontend. The
+# frontend's direct host port is removed (!reset) so the app is only reachable
+# through HTTPS, and the session cookie is marked Secure.
+
+services:
+  traefik:
+    image: traefik:v3.2
+    container_name: smokeping-easy-traefik
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:?ACME_EMAIL is required for TLS}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Read-only docker socket so Traefik can discover the frontend container.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+    networks:
+      - smokeping-easy
+
+  frontend:
+    # Only reachable via Traefik now — drop the direct host port.
+    ports: !reset []
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.smokeping.rule=Host(`${DOMAIN:?DOMAIN is required for TLS}`)"
+      - "traefik.http.routers.smokeping.entrypoints=websecure"
+      - "traefik.http.routers.smokeping.tls.certresolver=le"
+      - "traefik.http.services.smokeping.loadbalancer.server.port=8080"
+
+  backend:
+    environment:
+      # Behind TLS the session cookie must be Secure.
+      COOKIE_SECURE: "true"
+
+  smokeping:
+    # Native graphs stay internal (reached via nginx /smokeping/); no host port.
+    ports: !reset []
+
+volumes:
+  letsencrypt:

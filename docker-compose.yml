@@ -1,0 +1,120 @@
+# smokeping-easy — main stack
+# ---------------------------------------------------------------------------
+#   docker compose up -d
+#
+# Only the frontend (nginx) and the Smokeping read-only web UI publish ports to
+# the host. The backend and the Smokeping reload API are reachable ONLY on the
+# internal Docker network and are never mapped to the host.
+#
+# The network is dual-stack (IPv4 + IPv6). See README for host requirements.
+# (Compose Specification — the obsolete top-level `version:` key is omitted.)
+# ---------------------------------------------------------------------------
+
+x-restart: &restart unless-stopped
+
+services:
+  smokeping:
+    build:
+      context: ./smokeping
+    image: smokeping-easy/smokeping:latest
+    container_name: smokeping-easy-smokeping
+    restart: *restart
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-UTC}
+      RELOAD_TOKEN: ${RELOAD_TOKEN:-}
+      RELOAD_PORT: "9000"
+    volumes:
+      - smokeping-config:/config
+      - smokeping-data:/data
+    networks:
+      - smokeping-easy
+    # Read-only native Smokeping graphs. Comment this out to keep Smokeping
+    # fully internal (it is still reachable through nginx at /smokeping/).
+    ports:
+      - "${SMOKEPING_WEB_PORT:-8081}:80"
+    healthcheck:
+      # Verify BOTH the web UI (Apache) AND that the smokeping daemon is alive,
+      # so a dead poller/daemon surfaces as unhealthy instead of hiding behind
+      # a still-serving Apache.
+      test: ["CMD-SHELL", "pgrep -f 'smokeping --config' >/dev/null && curl -fsS -o /dev/null http://localhost:80/smokeping/smokeping.cgi"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        APP_UID: ${PUID:-1000}
+        APP_GID: ${PGID:-1000}
+    image: smokeping-easy/backend:latest
+    container_name: smokeping-easy-backend
+    restart: *restart
+    depends_on:
+      smokeping:
+        condition: service_started
+    environment:
+      TZ: ${TZ:-UTC}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SESSION_TTL_MINUTES: ${SESSION_TTL_MINUTES:-120}
+      LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
+      LOGIN_WINDOW_MINUTES: ${LOGIN_WINDOW_MINUTES:-10}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      RELOAD_URL: "http://smokeping:9000"
+      RELOAD_TOKEN: ${RELOAD_TOKEN:-}
+      SMOKEPING_TARGETS_FILE: "/config/Targets"
+      SMOKEPING_DATA_DIR: "/data"
+      APP_DATA_DIR: "/app/data"
+    volumes:
+      - smokeping-config:/config
+      - smokeping-data:/data:ro
+      - backend-data:/app/data
+    networks:
+      - smokeping-easy
+    # NOTE: the backend intentionally publishes NO ports. It is reachable only
+    # through the nginx proxy (/api).
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/api/status', timeout=5).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+    image: smokeping-easy/frontend:latest
+    container_name: smokeping-easy-frontend
+    restart: *restart
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-UTC}
+    networks:
+      - smokeping-easy
+    ports:
+      - "${HTTP_PORT:-3000}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+networks:
+  smokeping-easy:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+        - subnet: fd00:c0de:ca11::/64
+
+volumes:
+  smokeping-config:
+  smokeping-data:
+  backend-data:

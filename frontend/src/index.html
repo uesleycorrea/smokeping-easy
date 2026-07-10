@@ -1,0 +1,94 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>smokeping-easy</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📡</text></svg>" />
+<link rel="stylesheet" href="/style.css" />
+<script defer src="/js/i18n.js"></script>
+<script defer src="/js/api.js"></script>
+<script
+  defer
+  src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"
+  integrity="sha384-Sse/HDqcypGpyTDpvZOJNnG0TT3feGQUkF9H+mnRvic+LjR+K1NhTt8f51KIQ3v3"
+  crossorigin="anonymous"></script>
+<script
+  defer
+  src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"
+  integrity="sha384-9Ax3MmS9AClxJyd5/zafcXXjxmwFhZCdsT6HJoJjarvCaAkJlk5QDzjLJm+Wdx5F"
+  crossorigin="anonymous"></script>
+
+<div class="login-wrap" x-cloak x-data="{
+    password: '',
+    loading: false,
+    error: '',
+    async init() {
+      // If already authenticated, skip straight to the app.
+      try { const s = await Api.status(); if (s.authenticated) window.location.href = '/app.html'; } catch (e) {}
+    },
+    async submit() {
+      this.error = '';
+      if (!this.password) { this.error = $store.i18n.t('errors.password_too_short'); return; }
+      this.loading = true;
+      try {
+        await Api.login(this.password);
+        window.location.href = '/app.html';
+      } catch (e) {
+        if (e.status === 429) {
+          this.error = $store.i18n.t('login.error_rate_limited', { seconds: (e.body && e.body.retry_after) || 60 });
+        } else if (e.status === 401) {
+          this.error = $store.i18n.t('login.error_invalid');
+        } else {
+          this.error = $store.i18n.t('common.connection_error');
+        }
+      } finally { this.loading = false; }
+    }
+  }">
+  <div class="login-card card">
+    <div class="brand-mark">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3 8 5-16 3 8h5"/></svg>
+      </span>
+      <div>
+        <strong x-text="$store.i18n.t('app.title')"></strong>
+        <small x-text="$store.i18n.t('app.subtitle')"></small>
+      </div>
+    </div>
+
+    <h1 x-text="$store.i18n.t('login.title')" style="font-size:1.2rem;"></h1>
+
+    <form @submit.prevent="submit()" class="stack">
+      <div class="field">
+        <label for="pw" x-text="$store.i18n.t('login.password')"></label>
+        <input id="pw" type="password" autocomplete="current-password"
+               x-model="password"
+               :placeholder="$store.i18n.t('login.password_ph')"
+               @keydown="error=''" autofocus />
+      </div>
+
+      <template x-if="error">
+        <div class="inline-err" x-text="error"></div>
+      </template>
+
+      <button type="submit" class="btn btn-primary btn-block" :disabled="loading">
+        <template x-if="loading"><span class="spinner"></span></template>
+        <span x-text="loading ? $store.i18n.t('login.signing_in') : $store.i18n.t('login.submit')"></span>
+      </button>
+    </form>
+
+    <div class="spread" style="margin-top:1.2rem;">
+      <span class="hint" style="margin:0;" x-text="$store.i18n.t('settings.language')"></span>
+      <select class="lang-select" @change="$store.i18n.setLang($event.target.value)">
+        <template x-for="l in $store.i18n.supported" :key="l">
+          <option :value="l" :selected="l === $store.i18n.lang" x-text="$store.i18n.t('lang.' + l)"></option>
+        </template>
+      </select>
+    </div>
+
+    <footer class="app-footer" style="margin-top:1.4rem;">
+      <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer" class="gpl-badge">
+        <span class="gpl-mark">GPL v3</span>
+        <span x-text="$store.i18n.t('footer.license_badge')"></span>
+      </a>
+    </footer>
+  </div>
+</div>
