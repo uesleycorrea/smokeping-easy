@@ -18,6 +18,7 @@ services:
       context: ./smokeping
     image: smokeping-easy/smokeping:latest
     container_name: smokeping-easy-smokeping
+    hostname: smokeping-easy-svc
     restart: *restart
     environment:
       PUID: ${PUID:-1000}
@@ -63,7 +64,7 @@ services:
       LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
       LOGIN_WINDOW_MINUTES: ${LOGIN_WINDOW_MINUTES:-10}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-      RELOAD_URL: "http://smokeping:9000"
+      RELOAD_URL: "http://smokeping-easy-svc:9000"
       RELOAD_TOKEN: ${RELOAD_TOKEN:-}
       SMOKEPING_TARGETS_FILE: "/config/Targets"
       SMOKEPING_DATA_DIR: "/data"
