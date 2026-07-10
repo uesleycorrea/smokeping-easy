@@ -25,7 +25,7 @@ services:
       PGID: ${PGID:-1000}
       TZ: ${TZ:-UTC}
       RELOAD_TOKEN: ${RELOAD_TOKEN:-}
-      RELOAD_PORT: "9000"
+      RELOAD_PORT: ${RELOAD_PORT:-9731}
     volumes:
       - smokeping-config:/config
       - smokeping-data:/data
@@ -64,7 +64,7 @@ services:
       LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
       LOGIN_WINDOW_MINUTES: ${LOGIN_WINDOW_MINUTES:-10}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-      RELOAD_URL: "http://smokeping-easy-svc:9000"
+      RELOAD_URL: "http://smokeping-easy-svc:${RELOAD_PORT:-9731}"
       RELOAD_TOKEN: ${RELOAD_TOKEN:-}
       SMOKEPING_TARGETS_FILE: "/config/Targets"
       SMOKEPING_DATA_DIR: "/data"

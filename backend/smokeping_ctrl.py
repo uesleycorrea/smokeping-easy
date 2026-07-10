@@ -16,7 +16,7 @@ import httpx
 
 log = logging.getLogger("smokeping_easy.ctrl")
 
-RELOAD_URL = os.environ.get("RELOAD_URL", "http://smokeping:9000").rstrip("/")
+RELOAD_URL = os.environ.get("RELOAD_URL", "http://smokeping-easy-svc:9731").rstrip("/")
 RELOAD_TOKEN = os.environ.get("RELOAD_TOKEN", "")
 TIMEOUT = float(os.environ.get("RELOAD_TIMEOUT", "30"))
 

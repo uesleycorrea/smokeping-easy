@@ -190,6 +190,24 @@ docker compose up -d --build
 Your data (targets, groups, settings, latency history) lives in Docker volumes
 and is preserved across updates.
 
+## 🛠️ Troubleshooting
+
+**Targets don't appear in Smokeping after adding them in the UI**
+Usually a name clash with another container called `smokeping` on the same host.
+smokeping-easy already uses an explicit internal hostname (`smokeping-easy-svc`)
+to avoid this — make sure you're on a recent version and rebuild
+(`docker compose up -d --build`).
+
+**The web UI won't open / "port is already in use"**
+Another application is using the same host port. Edit `HTTP_PORT` in `.env`
+(default `3000`) to a free port, then `docker compose up -d`.
+
+**Conflict with Portainer / GenieACS on internal port 9000**
+None expected: the internal Smokeping reload API is **never published to the
+host** (it only exists on the Docker network), and its default port is now
+`9731`. Only if you run the stack with `network_mode: host` and `9731` is taken,
+change `RELOAD_PORT` in `.env`.
+
 ## 🗺️ Roadmap
 
 **Shipped**

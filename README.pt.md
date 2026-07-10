@@ -191,6 +191,24 @@ docker compose up -d --build
 Seus dados (alvos, grupos, configurações, histórico de latência) ficam em volumes
 do Docker e são preservados entre atualizações.
 
+## 🛠️ Solução de problemas
+
+**Os alvos não aparecem no Smokeping após adicionar pela interface**
+Geralmente é um conflito de nome com outro container chamado `smokeping` no mesmo
+host. O smokeping-easy já usa um hostname interno explícito (`smokeping-easy-svc`)
+para evitar isso — confira se está numa versão recente e reconstrua
+(`docker compose up -d --build`).
+
+**A interface não abre / "port is already in use"**
+Outra aplicação está usando a mesma porta do host. Edite `HTTP_PORT` no `.env`
+(padrão `3000`) para uma porta livre e rode `docker compose up -d`.
+
+**Conflito com Portainer / GenieACS na porta interna 9000**
+Nenhum esperado: a API interna de reload do Smokeping **nunca é publicada ao
+host** (só existe na rede do Docker) e a porta padrão agora é `9731`. Apenas se
+você rodar o stack com `network_mode: host` e a `9731` estiver ocupada, mude o
+`RELOAD_PORT` no `.env`.
+
 ## 🗺️ Roadmap
 
 **Incluído**

@@ -190,6 +190,24 @@ docker compose up -d --build
 Tus datos (destinos, grupos, ajustes, historial de latencia) viven en volúmenes
 de Docker y se conservan entre actualizaciones.
 
+## 🛠️ Solución de problemas
+
+**Los destinos no aparecen en Smokeping tras agregarlos en la UI**
+Suele ser un choque de nombre con otro contenedor llamado `smokeping` en el
+mismo host. smokeping-easy ya usa un hostname interno explícito
+(`smokeping-easy-svc`) para evitarlo — asegúrate de estar en una versión reciente
+y reconstruye (`docker compose up -d --build`).
+
+**La interfaz no abre / "port is already in use"**
+Otra aplicación está usando el mismo puerto del host. Edita `HTTP_PORT` en
+`.env` (por defecto `3000`) a un puerto libre y luego `docker compose up -d`.
+
+**Conflicto con Portainer / GenieACS en el puerto interno 9000**
+No se espera ninguno: la API interna de recarga de Smokeping **nunca se publica
+al host** (solo existe en la red de Docker) y su puerto por defecto ahora es
+`9731`. Solo si ejecutas el stack con `network_mode: host` y `9731` está ocupado,
+cambia `RELOAD_PORT` en `.env`.
+
 ## 🗺️ Hoja de ruta
 
 **Incluido**

@@ -14,11 +14,14 @@ import os
 import re
 import subprocess
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 RELOAD_TOKEN = os.environ.get("RELOAD_TOKEN", "")
 CONFIG_PATH = os.environ.get("SMOKEPING_CONFIG_FILE", "/etc/smokeping/config")
-LISTEN_PORT = int(os.environ.get("RELOAD_PORT", "9000"))
+# 9731 is an unlikely-to-conflict default (9000 clashes with Portainer, etc.).
+# The port is internal-only, so it is never published to the host.
+LISTEN_PORT = int(os.environ.get("RELOAD_PORT", "9731"))
 SMOKEPING_BIN = os.environ.get("SMOKEPING_BIN", "/usr/sbin/smokeping")
 SMOKEPING_SVC = os.environ.get("SMOKEPING_SVC", "/run/service/svc-smokeping")
 MTR_BIN = os.environ.get("MTR_BIN", "/usr/sbin/mtr")
@@ -68,8 +71,14 @@ def smokeping_version():
     return ver
 
 
-def smokeping_running():
-    """True if the Smokeping master daemon process is alive."""
+def find_master_pid():
+    """PID of the Smokeping master (perl … --nodaemon), or None.
+
+    Only this container's processes are visible: the reload server runs inside
+    the smokeping container, which has its own isolated PID namespace (no
+    pid_mode: host), so it can never match a smokeping process from another
+    container on the same machine.
+    """
     for entry in os.listdir("/proc"):
         if not entry.isdigit():
             continue
@@ -79,8 +88,13 @@ def smokeping_running():
         except OSError:
             continue
         if b"smokeping" in cmd and b"--nodaemon" in cmd:
-            return True
-    return False
+            return int(entry)
+    return None
+
+
+def smokeping_running():
+    """True if the Smokeping master daemon process is alive."""
+    return find_master_pid() is not None
 
 
 def reload_master():
@@ -91,21 +105,32 @@ def reload_master():
     robust approach is to let the s6 supervisor cleanly restart the service:
     ``s6-svc -u`` guarantees the service is wanted-up (defeating any stale
     ``down`` state) and ``s6-svc -r`` restarts it so the new config is loaded.
-    Requires root, which is why the reload API runs as root (internal-only,
-    token-protected). Returns (ok, detail).
+
+    We then WAIT (up to ~10s) for a *new* master process (different PID) to
+    come up, so success is only reported once Smokeping has actually restarted
+    and re-read the config — never prematurely. Requires root, which is why the
+    reload API runs as root (internal-only, token-protected). Returns
+    (ok, detail).
     """
+    old_pid = find_master_pid()
     try:
         # Ensure the service is wanted-up, then restart it.
-        up = subprocess.run(["s6-svc", "-u", SMOKEPING_SVC],
-                            capture_output=True, text=True, timeout=15)
+        subprocess.run(["s6-svc", "-u", SMOKEPING_SVC],
+                       capture_output=True, text=True, timeout=15)
         res = subprocess.run(["s6-svc", "-r", SMOKEPING_SVC],
                              capture_output=True, text=True, timeout=15)
     except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
         return False, f"s6-svc error: {exc}"
     if res.returncode != 0:
         return False, (res.stderr or res.stdout or "s6-svc -r failed").strip()
-    _ = up  # (up failures are non-fatal; the restart is what matters)
-    return True, "smokeping service restarted"
+
+    # Wait for a fresh master (different PID) before declaring success.
+    for _ in range(10):
+        time.sleep(1)
+        pid = find_master_pid()
+        if pid is not None and pid != old_pid:
+            return True, f"smokeping restarted (pid {pid})"
+    return False, "smokeping did not come back within 10s after restart"
 
 
 def run_mtr(host, ipv6=False, cycles=5):
