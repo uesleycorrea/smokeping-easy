@@ -15,6 +15,13 @@ function settingsApp() {
     status: null,
     models: [],
 
+    // System card
+    sys: { running: false, targets: 0, last_reload_at: null, version: "" },
+    reloading: false,
+    reloadMsg: null,          // { type: 'ok'|'error', text }
+    _sysTimer: null,
+    _reloadMsgTimer: null,
+
     // Groups management
     groups: [],
     newGroupName: "",
@@ -60,6 +67,70 @@ function settingsApp() {
     async loadStatus() {
       try { this.status = await Api.get("/api/alerts/status"); } catch (e) {}
       try { this.groups = (await Api.groups()).groups || []; } catch (e) {}
+    },
+
+    // --- System card -------------------------------------------------------
+    // Called by the Settings section's x-effect whenever the active tab
+    // changes: (re)load data and manage a SINGLE 30s auto-refresh interval
+    // that is cleared when navigating away (so intervals never accumulate).
+    handleTab(tab) {
+      if (tab === "settings") {
+        if (!this.loading) this.loadStatus();
+        this.startSystemAutoRefresh();
+      } else {
+        this.stopSystemAutoRefresh();
+      }
+    },
+    startSystemAutoRefresh() {
+      if (this._sysTimer) return;           // guard against duplicate intervals
+      this.loadSystem();
+      this._sysTimer = setInterval(() => this.loadSystem(), 30000);
+    },
+    stopSystemAutoRefresh() {
+      if (this._sysTimer) { clearInterval(this._sysTimer); this._sysTimer = null; }
+    },
+    async loadSystem() {
+      try {
+        const s = await Api.status();
+        this.sys = {
+          running: !!s.smokeping_running,
+          targets: s.targets_count ?? 0,
+          last_reload_at: s.last_reload_at || null,
+          version: s.smokeping_version || ""
+        };
+      } catch (e) { /* keep previous */ }
+    },
+    relTime(iso) {
+      if (!iso) return this.t("system.never");
+      try {
+        const sec = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+        const rtf = new Intl.RelativeTimeFormat(this.$store.i18n.lang, { numeric: "auto" });
+        if (sec < 60) return rtf.format(-sec, "second");
+        const min = Math.round(sec / 60);
+        if (min < 60) return rtf.format(-min, "minute");
+        const hr = Math.round(min / 60);
+        if (hr < 24) return rtf.format(-hr, "hour");
+        return rtf.format(-Math.round(hr / 24), "day");
+      } catch (e) { return iso; }
+    },
+    async reloadSmokeping() {
+      this.reloading = true;
+      this.reloadMsg = null;
+      clearTimeout(this._reloadMsgTimer);
+      try {
+        const r = await Api.post("/api/smokeping/reload");
+        if (r && r.last_reload_at) this.sys.last_reload_at = r.last_reload_at;
+        this.reloadMsg = { type: "ok", text: "✓ " + this.t("system.reload_success") };
+        await this.loadSystem();
+        // Success message disappears after 5s.
+        this._reloadMsgTimer = setTimeout(() => { this.reloadMsg = null; }, 5000);
+      } catch (e) {
+        // Error stays visible, with the real message from the API.
+        const detail = (e instanceof Api.ApiError && e.detail) ? ": " + e.detail : "";
+        this.reloadMsg = { type: "error", text: this.t("system.reload_error") + detail };
+      } finally {
+        this.reloading = false;
+      }
     },
 
     // --- Groups ------------------------------------------------------------

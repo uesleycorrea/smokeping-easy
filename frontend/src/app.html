@@ -382,8 +382,49 @@
 
     <!-- Settings tab (the single configuration hub) -->
     <section x-show="tab==='settings'" x-data="settingsApp()" x-init="init()"
-             x-effect="tab === 'settings' && !loading && loadStatus()">
+             x-effect="handleTab(tab)">
       <h1 x-text="$store.i18n.t('settings.title')"></h1>
+
+      <!-- System: Smokeping status + manual reload (auto-refreshes every 30s) -->
+      <div class="card" x-show="!loading">
+        <div class="spread" style="margin-bottom:1rem;">
+          <h2 style="margin:0;" x-text="$store.i18n.t('system.section')"></h2>
+          <button class="btn btn-primary" @click="reloadSmokeping()" :disabled="reloading">
+            <template x-if="reloading"><span class="spinner"></span></template>
+            <span x-text="reloading ? $store.i18n.t('system.reloading') : $store.i18n.t('system.btn_reload')"></span>
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr>
+                <td x-text="$store.i18n.t('system.smokeping_status')"></td>
+                <td>
+                  <span class="badge" :class="sys.running ? 'ok' : 'danger'">
+                    <span class="dot"></span>
+                    <span x-text="sys.running ? $store.i18n.t('system.status_running') : $store.i18n.t('system.status_stopped')"></span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td x-text="$store.i18n.t('system.active_targets')"></td>
+                <td class="num" x-text="sys.targets"></td>
+              </tr>
+              <tr>
+                <td x-text="$store.i18n.t('system.last_reload')"></td>
+                <td x-text="relTime(sys.last_reload_at)"></td>
+              </tr>
+              <tr>
+                <td x-text="$store.i18n.t('system.version')"></td>
+                <td class="mono" x-text="sys.version || '—'"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <template x-if="reloadMsg">
+          <p :class="reloadMsg.type === 'ok' ? 'inline-ok' : 'inline-err'" style="margin-bottom:0;" x-text="reloadMsg.text"></p>
+        </template>
+      </div>
 
       <div class="card">
         <h2 x-text="$store.i18n.t('settings.change_password')"></h2>

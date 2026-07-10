@@ -40,6 +40,49 @@ def run_smokeping(extra_args):
     )
 
 
+_version_cache = None
+
+
+def smokeping_version():
+    """Return the Smokeping version as a readable dotted string (e.g. 2.9.0).
+
+    ``smokeping --version`` prints a Perl-style version like ``2.009000``.
+    """
+    global _version_cache
+    if _version_cache is not None:
+        return _version_cache
+    try:
+        out = subprocess.run([SMOKEPING_BIN, "--version"], capture_output=True,
+                             text=True, timeout=10).stdout.strip()
+    except Exception:  # noqa: BLE001
+        out = ""
+    ver = out
+    m = re.match(r"^(\d+)\.(\d+)$", out)
+    if m:
+        major, frac = m.group(1), m.group(2)
+        while len(frac) % 3 != 0:
+            frac += "0"
+        parts = [str(int(frac[i:i + 3])) for i in range(0, len(frac), 3)]
+        ver = major + "." + ".".join(parts)
+    _version_cache = ver
+    return ver
+
+
+def smokeping_running():
+    """True if the Smokeping master daemon process is alive."""
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        try:
+            with open(f"/proc/{entry}/cmdline", "rb") as fh:
+                cmd = fh.read()
+        except OSError:
+            continue
+        if b"smokeping" in cmd and b"--nodaemon" in cmd:
+            return True
+    return False
+
+
 def reload_master():
     """Reload the Smokeping configuration by restarting its s6 service.
 
@@ -140,8 +183,14 @@ class Handler(BaseHTTPRequestHandler):
         return self.headers.get("X-Reload-Token", "") == RELOAD_TOKEN
 
     def do_GET(self):
-        if self.path.rstrip("/") in ("/health", "/healthz"):
+        path = self.path.rstrip("/")
+        if path in ("/health", "/healthz"):
             return self._send(200, {"status": "ok"})
+        if path == "/status":
+            return self._send(200, {
+                "running": smokeping_running(),
+                "version": smokeping_version(),
+            })
         return self._send(404, {"error": "not_found"})
 
     def do_POST(self):

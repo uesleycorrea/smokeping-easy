@@ -222,17 +222,30 @@ def _target_public(t: dict) -> dict:
 
 
 @app.get("/api/status")
-async def status(request: Request):
+def status(request: Request):
+    # Sync route -> threadpool (the smokeping status probe may block briefly).
     token = request.cookies.get(auth.COOKIE_NAME)
+    authed = auth.get_session(token) is not None
     app_cfg = settings_mod.load().get("app", {})
-    return {
+    resp = {
         "status": "ok",
         "version": VERSION,
-        "authenticated": auth.get_session(token) is not None,
+        "authenticated": authed,
         "setup_required": not auth.password_is_configured(),
         "language": app_cfg.get("language", "es"),
         "timezone": app_cfg.get("timezone", "UTC"),
     }
+    # Detailed system status is only exposed to authenticated sessions (and so
+    # never probes Smokeping for anonymous/healthcheck traffic).
+    if authed:
+        sp = smokeping_ctrl.status()
+        resp.update(
+            smokeping_running=sp["running"],
+            targets_count=len(config_writer.load_targets()),
+            last_reload_at=smokeping_ctrl.get_last_reload(),
+            smokeping_version=sp["version"],
+        )
+    return resp
 
 
 # --- Auth ------------------------------------------------------------------
@@ -538,6 +551,18 @@ def run_daily_report(_s: auth.Session = Depends(require_session)):
 @app.get("/api/reports/history")
 async def reports_history(_s: auth.Session = Depends(require_session)):
     return {"history": poller.get_history()}
+
+
+# --- System ----------------------------------------------------------------
+
+
+@app.post("/api/smokeping/reload")
+def smokeping_reload(_s: auth.Session = Depends(require_session)):
+    # Sync route -> threadpool (the reload restarts the service, ~seconds).
+    ok, body = smokeping_ctrl.reload()
+    if not ok:
+        raise _http(502, "reload_failed", str(body.get("detail") or body.get("error") or ""))
+    return {"ok": True, "last_reload_at": smokeping_ctrl.get_last_reload()}
 
 
 # --- AI analysis -----------------------------------------------------------
