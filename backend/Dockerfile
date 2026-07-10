@@ -5,7 +5,7 @@
 # Runs as a NON-root user whose UID/GID match PUID/PGID so the backend can write
 # the shared Targets file on the smokeping-config volume. Reads RRD data through
 # the `rrdtool` CLI (installed here; the /data volume is mounted read-only).
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Build-time UID/GID so the container user matches the shared-volume owner.
 ARG APP_UID=1000
