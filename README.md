@@ -74,6 +74,36 @@ Built for ISPs and network operators across Latin America (and everywhere else).
 
 That's it — no Python, Node or build tools required.
 
+## 🐳 Installing Docker & Docker Compose
+
+Already have them? Check with:
+
+```bash
+docker --version && docker compose version
+```
+
+If both print a version, skip to the next section.
+
+**Linux (Ubuntu, Debian, Fedora, etc.)** — the official convenience script
+installs Docker Engine *and* the Compose plugin:
+
+```bash
+curl -fsSL https://get.docker.com | sudo sh
+```
+
+Then start Docker on boot and (optionally) run it without `sudo`:
+
+```bash
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER   # log out and back in for this to take effect
+```
+
+**Windows / macOS** — install
+[Docker Desktop](https://docs.docker.com/get-docker/) (Compose is included).
+
+Other distributions and manual methods:
+<https://docs.docker.com/engine/install/>
+
 ## 🚀 Install in 3 steps
 
 **1. Clone**

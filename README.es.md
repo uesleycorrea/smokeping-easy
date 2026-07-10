@@ -74,6 +74,36 @@ Hecho para ISP y operadores de red en América Latina (y en todas partes).
 
 Nada más: sin Python, Node ni herramientas de compilación.
 
+## 🐳 Instalar Docker y Docker Compose
+
+¿Ya los tienes? Verifica con:
+
+```bash
+docker --version && docker compose version
+```
+
+Si ambos muestran una versión, salta a la siguiente sección.
+
+**Linux (Ubuntu, Debian, Fedora, etc.)** — el script oficial instala Docker
+Engine *y* el plugin de Compose:
+
+```bash
+curl -fsSL https://get.docker.com | sudo sh
+```
+
+Luego inicia Docker al arrancar y (opcional) úsalo sin `sudo`:
+
+```bash
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER   # cierra sesión y vuelve a entrar para que aplique
+```
+
+**Windows / macOS** — instala
+[Docker Desktop](https://docs.docker.com/get-docker/) (Compose ya viene incluido).
+
+Otras distribuciones y métodos manuales:
+<https://docs.docker.com/engine/install/>
+
 ## 🚀 Instalación en 3 pasos
 
 **1. Clonar**
