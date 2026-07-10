@@ -20,7 +20,7 @@ import httpx
 import rrd_reader
 import settings as settings_mod
 from models_fetcher import (ANTHROPIC_BASE, ANTHROPIC_VERSION, OPENAI_BASE,
-                            ProviderError)
+                            ProviderError, extract_error_detail)
 
 log = logging.getLogger("smokeping_easy.ai")
 
@@ -134,9 +134,12 @@ def _call_claude(api_key: str, model: str, prompt: str, max_tokens: int) -> str:
 def _call_openai(api_key: str, model: str, prompt: str, max_tokens: int) -> str:
     url = f"{OPENAI_BASE}/v1/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "content-type": "application/json"}
+    # Newer OpenAI models (o-series, gpt-4o, gpt-5, …) reject the legacy
+    # `max_tokens` and require `max_completion_tokens`; the latter is accepted
+    # by current chat models, so we use it universally.
     body = {
         "model": model,
-        "max_tokens": max_tokens,
+        "max_completion_tokens": max_tokens,
         "messages": [{"role": "user", "content": prompt}],
     }
     data = _post(url, headers, body)
@@ -158,7 +161,7 @@ def _post(url: str, headers: dict, body: dict) -> dict:
     if resp.status_code == 429:
         raise ProviderError("rate_limited")
     if resp.status_code >= 400:
-        raise ProviderError("provider_error", f"http_{resp.status_code}")
+        raise ProviderError("provider_error", extract_error_detail(resp))
     try:
         return resp.json()
     except ValueError as exc:

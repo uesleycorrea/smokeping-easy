@@ -23,7 +23,11 @@
       const key = "errors." + this.code;
       const t = window.I18n ? window.I18n.t(key) : this.code;
       // If i18n had no mapping it returns the key unchanged -> fall back.
-      return t === key ? (window.I18n ? window.I18n.t("errors.generic") : this.code) : t;
+      let base = t === key ? (window.I18n ? window.I18n.t("errors.generic") : this.code) : t;
+      // For generic provider errors, append the real message from the provider
+      // so the user can actually see what went wrong.
+      if (this.code === "provider_error" && this.detail) base += " — " + this.detail;
+      return base;
     }
   }
 
