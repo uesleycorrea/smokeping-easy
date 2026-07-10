@@ -178,16 +178,6 @@ de Docker y se conservan entre actualizaciones.
 - [x] Secretos cifrados en reposo
 - [x] Perfil TLS opcional (Traefik + Let's Encrypt)
 
-**Planeado**
-
-- [ ] **Historial de MTR + detección de cambio de ruta** con alertas de Telegram (consciente de ECMP)
-- [ ] Correcciones del proveedor OpenAI
-- [ ] Más tipos de sonda (HTTP, DNS, TCP)
-- [ ] Más canales de notificación (email, webhook, Slack)
-- [ ] Importar / exportar destinos (CSV)
-- [ ] Multiusuario con roles
-- [ ] Página de estado pública / dashboards
-
 ## 🛡️ Seguridad
 
 Puntos clave: contraseña bcrypt + sesiones del lado servidor `HttpOnly`/`SameSite`,

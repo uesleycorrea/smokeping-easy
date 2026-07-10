@@ -178,16 +178,6 @@ and is preserved across updates.
 - [x] Encrypted secrets at rest
 - [x] Optional TLS profile (Traefik + Let's Encrypt)
 
-**Planned**
-
-- [ ] **MTR history + route-change detection** with Telegram alerts (ECMP-aware)
-- [ ] OpenAI provider fixes
-- [ ] More probe types (HTTP, DNS, TCP)
-- [ ] Additional notification channels (email, webhook, Slack)
-- [ ] Target import / export (CSV)
-- [ ] Multi-user with roles
-- [ ] Public status page / dashboards
-
 ## 🛡️ Security
 
 Highlights: bcrypt password + server-side `HttpOnly`/`SameSite` sessions,
