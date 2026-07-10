@@ -5,7 +5,7 @@
 [English](README.md) · [Español](README.es.md) · **Português**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](https://github.com/uesleycorrea/smokeping-easy/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-brightgreen.svg)](https://github.com/uesleycorrea/smokeping-easy/releases)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/)
 
 *Smokeping com uma interface web moderna, alertas no Telegram e análise de IA — no ar em minutos com Docker Compose.*
@@ -193,7 +193,7 @@ do Docker e são preservados entre atualizações.
 
 ## 🗺️ Roadmap
 
-**v1.0.0 — lançado**
+**Incluído**
 
 - [x] Interface web trilíngue (EN / ES / PT)
 - [x] Cadastro/edição de alvos pela UI, organizados em grupos
@@ -208,6 +208,7 @@ do Docker e são preservados entre atualizações.
 - [x] Dual-stack IPv4 / IPv6
 - [x] Segredos criptografados em repouso
 - [x] Perfil TLS opcional (Traefik + Let's Encrypt)
+- [x] Card de status do sistema + reload manual do Smokeping nas Configurações
 
 ## 🛡️ Segurança
 

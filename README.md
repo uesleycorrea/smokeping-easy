@@ -5,7 +5,7 @@
 **English** · [Español](README.es.md) · [Português](README.pt.md)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](https://github.com/uesleycorrea/smokeping-easy/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-brightgreen.svg)](https://github.com/uesleycorrea/smokeping-easy/releases)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/)
 
 *Smokeping with a modern web UI, Telegram alerts and AI analysis — up in minutes with Docker Compose.*
@@ -192,7 +192,7 @@ and is preserved across updates.
 
 ## 🗺️ Roadmap
 
-**v1.0.0 — shipped**
+**Shipped**
 
 - [x] Trilingual web UI (EN / ES / PT)
 - [x] Target CRUD from the UI, organized in groups
@@ -207,6 +207,7 @@ and is preserved across updates.
 - [x] Dual-stack IPv4 / IPv6
 - [x] Encrypted secrets at rest
 - [x] Optional TLS profile (Traefik + Let's Encrypt)
+- [x] System status card + manual Smokeping reload in Settings
 
 ## 🛡️ Security
 

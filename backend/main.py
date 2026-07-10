@@ -47,7 +47,7 @@ import validators
 from log_middleware import AccessLogMiddleware
 from models_fetcher import ProviderError
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 # --- Logging ---------------------------------------------------------------
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
