@@ -1,6 +1,6 @@
 # smokeping-easy backend — PINNED dependencies (exact versions, never ranges).
 # Regenerate deliberately; Dependabot proposes updates one at a time.
-fastapi==0.115.6
+fastapi==0.139.0
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
 cryptography==44.0.0
