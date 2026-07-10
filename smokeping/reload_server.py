@@ -12,7 +12,6 @@ Only the Python standard library is used so the Smokeping image only needs
 import json
 import os
 import re
-import signal
 import subprocess
 import threading
 import time
@@ -98,35 +97,6 @@ def smokeping_running():
     return find_master_pid() is not None
 
 
-def recycle_cgi():
-    """Kill any persistent smokeping_cgi process(es).
-
-    Under mod_fcgid the CGI process stays alive between requests and caches the
-    parsed config in memory, so newly added targets don't show up in the native
-    web UI until it is recycled. Killing it makes Apache spawn a fresh CGI that
-    re-reads /config/Targets. (Under plain mod_cgi there is nothing to kill.)
-    """
-    try:
-        result = subprocess.run(["pgrep", "-f", "smokeping_cgi"],
-                                capture_output=True, text=True, timeout=5)
-        for pid_str in result.stdout.split():
-            try:
-                os.kill(int(pid_str), signal.SIGTERM)
-            except (ProcessLookupError, ValueError, PermissionError):
-                pass
-    except Exception:  # noqa: BLE001
-        pass
-
-
-def clear_sortercache():
-    """Drop Smokeping's sorter cache so charts/menus reflect current targets."""
-    try:
-        subprocess.run(["find", "/data/__sortercache", "-type", "f", "-delete"],
-                       capture_output=True, timeout=5)
-    except Exception:  # noqa: BLE001
-        pass
-
-
 def reload_master():
     """Reload the Smokeping configuration by restarting its s6 service.
 
@@ -153,11 +123,6 @@ def reload_master():
         return False, f"s6-svc error: {exc}"
     if res.returncode != 0:
         return False, (res.stderr or res.stdout or "s6-svc -r failed").strip()
-
-    # Force the native web UI to re-read the config: recycle the cached CGI
-    # process and clear the sorter cache.
-    recycle_cgi()
-    clear_sortercache()
 
     # Wait for a fresh master (different PID) before declaring success.
     for _ in range(10):
