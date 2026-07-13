@@ -24,7 +24,7 @@
       "nav.alerts": "Alerts",
       "nav.analyzer": "AI Analysis",
       "nav.settings": "Settings",
-      "nav.smokeping": "Smokeping graphs",
+      "nav.smokeping": "Smokeping",
       "nav.logout": "Log out",
 
       "monitor.empty": "No targets on the monitor. Add targets, or bring some back from “Hidden” below.",
@@ -270,7 +270,7 @@
       "nav.alerts": "Alertas",
       "nav.analyzer": "Análisis IA",
       "nav.settings": "Ajustes",
-      "nav.smokeping": "Gráficas Smokeping",
+      "nav.smokeping": "Smokeping",
       "nav.logout": "Cerrar sesión",
 
       "monitor.empty": "No hay destinos en el monitor. Agrega destinos o recupera alguno desde «Ocultos» abajo.",
@@ -516,7 +516,7 @@
       "nav.alerts": "Alertas",
       "nav.analyzer": "Análise IA",
       "nav.settings": "Configurações",
-      "nav.smokeping": "Gráficos Smokeping",
+      "nav.smokeping": "Smokeping",
       "nav.logout": "Sair",
 
       "monitor.empty": "Nenhum alvo no monitor. Adicione alvos ou traga algum de volta em “Ocultos” abaixo.",
