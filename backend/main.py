@@ -152,6 +152,7 @@ class AiSettingsBody(BaseModel):
     model: str | None = None
     api_key: str | None = None
     analysis_prompt: str | None = None
+    report_prompt: str | None = None
 
 
 class AnalyzeBody(BaseModel):
@@ -659,6 +660,8 @@ async def update_ai_settings(
     if body.analysis_prompt is not None:
         # Empty string resets to the built-in default.
         updates["analysis_prompt"] = body.analysis_prompt.strip()[:4000] or None
+    if body.report_prompt is not None:
+        updates["report_prompt"] = body.report_prompt.strip()[:4000] or None
     if updates:
         settings_mod.update_section("ai", updates)
     return settings_mod.get_public_settings()["ai"]

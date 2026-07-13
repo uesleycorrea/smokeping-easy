@@ -93,20 +93,12 @@ def _prompt_ondemand(label: str, host: str, period: str, data_text: str) -> str:
 
 
 def _prompt_daily(date_start: str, date_end: str, timezone: str, total: int, data_all: str) -> str:
-    return (
-        "Você é um especialista em redes gerando relatório diário de monitoramento.\n\n"
-        f"Período: últimas 24h ({date_start} a {date_end})\n"
-        f"Timezone: {timezone}\n"
-        f"Total de hosts monitorados: {total}\n\n"
-        "Dados consolidados:\n"
-        f"{data_all}\n\n"
-        "Gere um relatório executivo que:\n"
-        "1. Destaque hosts com comportamento anômalo\n"
-        "2. Identifique padrões correlacionados (problemas de upstream)\n"
-        "3. Classifique o status geral: Estável / Atenção / Crítico\n"
-        "4. Liste as 3 principais recomendações para o dia\n\n"
-        f"Formato para Telegram (emojis, sem markdown complexo). Máximo 600 palavras. "
-        f"Responda em {_lang_name()}."
+    # Use the user's editable report prompt if set, else the built-in default.
+    template = settings_mod.load().get("ai", {}).get("report_prompt") \
+        or settings_mod.DEFAULT_REPORT_PROMPT
+    return _render(
+        template, date_start=date_start, date_end=date_end, timezone=timezone,
+        total=total, data=data_all, language=_lang_name(),
     )
 
 

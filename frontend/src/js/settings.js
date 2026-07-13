@@ -32,7 +32,9 @@ function settingsApp() {
     pw: { current_password: "", new_password: "", confirm: "" },
     app: { timezone: "" },
     tg: { bot_token: "", chat_id: "", daily_report_enabled: false, daily_report_hour: 7, daily_report_minute: 0 },
-    ai: { provider: "claude", api_key: "", model: "", analysis_prompt: "" },
+    ai: { provider: "claude", api_key: "", model: "", analysis_prompt: "", report_prompt: "" },
+    promptTab: "analysis",   // which prompt is being edited
+    savingPrompts: false,
 
     t(k, p) { return this.$store.i18n.t(k, p); },
 
@@ -61,6 +63,7 @@ function settingsApp() {
       this.ai.provider = ai.provider || "claude";
       this.ai.model = ai.model || "";
       this.ai.analysis_prompt = ai.analysis_prompt || "";
+      this.ai.report_prompt = ai.report_prompt || "";
       this.ai.api_key = "";
     },
 
@@ -271,11 +274,7 @@ function settingsApp() {
     async saveAi() {
       this.savingAi = true;
       try {
-        const payload = {
-          provider: this.ai.provider,
-          model: this.ai.model,
-          analysis_prompt: this.ai.analysis_prompt
-        };
+        const payload = { provider: this.ai.provider, model: this.ai.model };
         if (this.ai.api_key) payload.api_key = this.ai.api_key;
         await Api.put("/api/settings/ai", payload);
         window.toast(this.t("common.saved"), "ok");
@@ -283,6 +282,20 @@ function settingsApp() {
       } catch (e) {
         window.toast(e instanceof Api.ApiError ? e.message_i18n : this.t("errors.generic"), "error");
       } finally { this.savingAi = false; }
+    },
+
+    async savePrompts() {
+      this.savingPrompts = true;
+      try {
+        await Api.put("/api/settings/ai", {
+          analysis_prompt: this.ai.analysis_prompt,
+          report_prompt: this.ai.report_prompt
+        });
+        window.toast(this.t("common.saved"), "ok");
+        await this.reload();
+      } catch (e) {
+        window.toast(e instanceof Api.ApiError ? e.message_i18n : this.t("errors.generic"), "error");
+      } finally { this.savingPrompts = false; }
     }
   };
 }

@@ -49,6 +49,24 @@ DEFAULT_ANALYSIS_PROMPT = (
     "Responda em {language}. Seja direto e técnico. Máximo 400 palavras."
 )
 
+# Default, editable daily-report prompt (sent to Telegram). Placeholders
+# {date_start} {date_end} {timezone} {total} {data} {language} are substituted.
+DEFAULT_REPORT_PROMPT = (
+    "Você é um especialista em redes gerando relatório diário de monitoramento.\n\n"
+    "Período: últimas 24h ({date_start} a {date_end})\n"
+    "Timezone: {timezone}\n"
+    "Total de hosts monitorados: {total}\n\n"
+    "Dados consolidados:\n"
+    "{data}\n\n"
+    "Gere um relatório executivo que:\n"
+    "1. Destaque hosts com comportamento anômalo\n"
+    "2. Identifique padrões correlacionados (problemas de upstream)\n"
+    "3. Classifique o status geral: Estável / Atenção / Crítico\n"
+    "4. Liste as 3 principais recomendações para o dia\n\n"
+    "Formato para Telegram (emojis, sem markdown complexo). Máximo 600 palavras. "
+    "Responda em {language}."
+)
+
 DEFAULTS: dict[str, Any] = {
     "telegram": {
         "bot_token": None,
@@ -62,6 +80,7 @@ DEFAULTS: dict[str, Any] = {
         "api_key": None,
         "model": None,
         "analysis_prompt": None,
+        "report_prompt": None,
     },
     "auth": {
         "password_hash": None,
@@ -217,6 +236,7 @@ def get_public_settings() -> dict:
             "api_key_set": is_secret_set(ai.get("api_key")),
             "model": ai.get("model"),
             "analysis_prompt": ai.get("analysis_prompt") or DEFAULT_ANALYSIS_PROMPT,
+            "report_prompt": ai.get("report_prompt") or DEFAULT_REPORT_PROMPT,
         },
         "app": {
             "language": app_.get("language", "es"),

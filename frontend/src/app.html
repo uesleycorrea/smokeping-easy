@@ -682,15 +682,36 @@
               </button>
             </div>
           </div>
-          <div class="field">
-            <label x-text="$store.i18n.t('settings.analysis_prompt')"></label>
-            <textarea x-model="ai.analysis_prompt" rows="10" style="font-family:var(--mono); font-size:.85rem; line-height:1.5;"></textarea>
-            <div class="hint" x-text="$store.i18n.t('settings.analysis_prompt_hint')"></div>
-          </div>
           <div>
             <button type="submit" class="btn btn-primary" :disabled="savingAi">
               <template x-if="savingAi"><span class="spinner"></span></template>
               <span x-text="$store.i18n.t('common.save')"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- AI prompts (one editable prompt at a time, via sub-tabs) -->
+      <div class="card" x-show="!loading">
+        <h2 x-text="$store.i18n.t('settings.prompts_section')"></h2>
+        <p class="muted" x-text="$store.i18n.t('settings.prompts_hint')"></p>
+        <div class="tabs" style="margin-bottom:.8rem;">
+          <button type="button" class="tab" :class="{active: promptTab==='analysis'}" @click="promptTab='analysis'" x-text="$store.i18n.t('settings.prompt_analysis')"></button>
+          <button type="button" class="tab" :class="{active: promptTab==='report'}" @click="promptTab='report'" x-text="$store.i18n.t('settings.prompt_report')"></button>
+        </div>
+        <form @submit.prevent="savePrompts()" class="stack">
+          <div class="field" x-show="promptTab==='analysis'">
+            <textarea x-model="ai.analysis_prompt" rows="12" style="font-family:var(--mono); font-size:.85rem; line-height:1.5;"></textarea>
+            <div class="hint" x-text="$store.i18n.t('settings.analysis_prompt_hint')"></div>
+          </div>
+          <div class="field" x-show="promptTab==='report'">
+            <textarea x-model="ai.report_prompt" rows="12" style="font-family:var(--mono); font-size:.85rem; line-height:1.5;"></textarea>
+            <div class="hint" x-text="$store.i18n.t('settings.report_prompt_hint')"></div>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary" :disabled="savingPrompts">
+              <template x-if="savingPrompts"><span class="spinner"></span></template>
+              <span x-text="$store.i18n.t('settings.save_prompts')"></span>
             </button>
           </div>
         </form>
