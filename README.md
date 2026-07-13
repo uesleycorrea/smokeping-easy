@@ -5,7 +5,7 @@
 **English** · [Español](README.es.md) · [Português](README.pt.md)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![Version](https://img.shields.io/badge/version-1.1.0-brightgreen.svg)](https://github.com/uesleycorrea/smokeping-easy/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-brightgreen.svg)](https://github.com/uesleycorrea/smokeping-easy/releases)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/)
 
 *Smokeping with a modern web UI, Telegram alerts and AI analysis — up in minutes with Docker Compose.*
@@ -44,6 +44,8 @@ Built for ISPs and network operators across Latin America (and everywhere else).
 ## ✨ Features
 
 - 🌍 **Trilingual web UI** — English, Spanish and Portuguese, switchable live.
+- 🖥️ **NOC monitor screen** — big status tiles grouped by group, drag-and-drop to
+  organize, and a fullscreen mode for a wall/TV display.
 - 🎯 **Add targets from the UI** — no config files, ever. Organize them in groups.
 - 🔔 **Telegram alerts** — per-target latency & loss thresholds, sent on breach.
 - 🧊 **Configurable alert interval (cooldown)** per target — no spam when a
@@ -213,6 +215,7 @@ change `RELOAD_PORT` in `.env`.
 **Shipped**
 
 - [x] Trilingual web UI (EN / ES / PT)
+- [x] NOC monitor screen (grouped status tiles, drag-and-drop, fullscreen)
 - [x] Target CRUD from the UI, organized in groups
 - [x] Group management (create / rename keeps history / delete)
 - [x] Telegram threshold alerts with per-target cooldown & recovery

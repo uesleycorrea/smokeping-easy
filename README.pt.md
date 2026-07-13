@@ -5,7 +5,7 @@
 [English](README.md) · [Español](README.es.md) · **Português**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![Version](https://img.shields.io/badge/version-1.1.0-brightgreen.svg)](https://github.com/uesleycorrea/smokeping-easy/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-brightgreen.svg)](https://github.com/uesleycorrea/smokeping-easy/releases)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/)
 
 *Smokeping com uma interface web moderna, alertas no Telegram e análise de IA — no ar em minutos com Docker Compose.*
@@ -46,6 +46,8 @@ Feito para ISPs e operadores de rede na América Latina (e no mundo todo).
 ## ✨ Funcionalidades
 
 - 🌍 **Interface web trilíngue** — inglês, espanhol e português, ao vivo.
+- 🖥️ **Tela de monitoramento (NOC)** — quadros grandes agrupados por grupo,
+  arrastar e soltar para organizar, e modo tela cheia para uma TV.
 - 🎯 **Cadastro de alvos pela UI** — sem arquivos de configuração. Organize em grupos.
 - 🔔 **Alertas no Telegram** — limites de latência e perda por alvo.
 - 🧊 **Intervalo entre alertas configurável** por alvo — sem spam.
@@ -214,6 +216,7 @@ você rodar o stack com `network_mode: host` e a `9731` estiver ocupada, mude o
 **Incluído**
 
 - [x] Interface web trilíngue (EN / ES / PT)
+- [x] Tela de monitoramento NOC (quadros agrupados, arrastar e soltar, tela cheia)
 - [x] Cadastro/edição de alvos pela UI, organizados em grupos
 - [x] Gestão de grupos (criar / renomear mantém o histórico / excluir)
 - [x] Alertas do Telegram por limite com intervalo e normalização por alvo

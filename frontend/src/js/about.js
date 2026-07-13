@@ -5,7 +5,7 @@ function aboutApp() {
   return {
     project: {
       name: "smokeping-easy",
-      version: "1.1.0",
+      version: "1.2.0",
       repo: "https://github.com/uesleycorrea/smokeping-easy",
       license_url: "https://www.gnu.org/licenses/gpl-3.0.html"
     },
