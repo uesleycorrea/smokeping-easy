@@ -11,8 +11,12 @@
 #     managed by the backend).
 #   * a seed Targets file so a fresh /config volume boots with a valid config.
 #
-# The base image tag is PINNED (never :latest) for reproducible builds.
-FROM lscr.io/linuxserver/smokeping:2.9.0-r0-ls176
+# Use :latest so fresh installs always work — LinuxServer rotates/removes the
+# dated tags from the registry, which broke new deployments pinned to a
+# specific one. Base-image changes are absorbed at boot by wrapper.sh (it
+# re-applies the Apache cgi-script handler every start), so tracking latest is
+# safe here.
+FROM lscr.io/linuxserver/smokeping:latest
 
 # python3 for the stdlib reload/MTR server; mtr for on-demand path tracing.
 RUN apk add --no-cache python3 mtr
