@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="/style.css" />
 <script defer src="/js/i18n.js"></script>
 <script defer src="/js/api.js"></script>
+<script defer src="/js/monitor.js"></script>
 <script defer src="/js/targets.js"></script>
 <script defer src="/js/analyzer.js"></script>
 <script defer src="/js/settings.js"></script>
@@ -22,7 +23,7 @@
   crossorigin="anonymous"></script>
 
 <div x-cloak x-data="{
-    tab: 'targets',
+    tab: 'monitor',
     online: true,
     async init() {
       try { await Api.me(); } catch (e) { return; }
@@ -55,6 +56,7 @@
       </div>
 
       <nav class="tabs" style="margin-left:1rem;">
+        <button class="tab" :class="{active: tab==='monitor'}" @click="tab='monitor'" x-text="$store.i18n.t('nav.monitor')"></button>
         <button class="tab" :class="{active: tab==='targets'}" @click="tab='targets'" x-text="$store.i18n.t('nav.targets')"></button>
         <button class="tab" :class="{active: tab==='analyzer'}" @click="tab='analyzer'" x-text="$store.i18n.t('nav.analyzer')"></button>
         <button class="tab" :class="{active: tab==='settings'}" @click="tab='settings'" x-text="$store.i18n.t('nav.settings')"></button>
@@ -80,6 +82,62 @@
   </header>
 
   <main class="container">
+    <!-- Monitor (NOC) tab -->
+    <section x-show="tab==='monitor'" x-data="monitorApp()" x-effect="onTab(tab)">
+      <div class="noc-root" :class="{'is-fullscreen': fullscreen}" x-ref="monitorRoot">
+        <div class="noc-bar">
+          <h1 style="margin:0;" x-text="$store.i18n.t('nav.monitor')"></h1>
+          <button class="btn btn-ghost" @click="toggleFullscreen()">
+            <span x-text="fullscreen ? $store.i18n.t('monitor.exit_fullscreen') : $store.i18n.t('monitor.fullscreen')"></span>
+          </button>
+        </div>
+
+        <template x-if="loading">
+          <div class="loading-block"><span class="spinner"></span></div>
+        </template>
+
+        <template x-if="!loading && visibleTiles.length === 0">
+          <div class="empty"><p x-text="$store.i18n.t('monitor.empty')"></p></div>
+        </template>
+
+        <div class="noc-grid" x-show="!loading && visibleTiles.length">
+          <template x-for="t in visibleTiles" :key="t.id">
+            <div class="noc-tile" :class="status(t)" draggable="true"
+                 @dragstart="onDragStart(t.id, $event)" @dragover.prevent @drop="onDrop(t.id)">
+              <div class="noc-tile-head">
+                <div style="min-width:0;">
+                  <div class="noc-label" x-text="t.label"></div>
+                  <div class="noc-host" x-text="t.host"></div>
+                </div>
+                <button class="noc-hide" @click="hide(t)" @dragstart.stop.prevent :title="$store.i18n.t('monitor.hide')">✕</button>
+              </div>
+              <div class="noc-metrics">
+                <div class="noc-latency">
+                  <span x-text="(t.latest && t.latest.avg_latency_ms != null) ? fmt(t.latest.avg_latency_ms) : '—'"></span><small x-text="$store.i18n.t('unit.ms')"></small>
+                </div>
+                <div class="noc-loss" x-show="t.latest && t.latest.loss_pct != null">
+                  <span x-text="fmt(t.latest && t.latest.loss_pct) + '%'"></span>
+                  <span class="muted" style="font-weight:500; font-size:.8rem;" x-text="$store.i18n.t('targets.loss').toLowerCase()"></span>
+                </div>
+                <div class="noc-loss muted" x-show="!(t.latest && (t.latest.avg_latency_ms != null || t.latest.loss_pct != null))"
+                     style="font-size:.9rem; font-weight:500;" x-text="$store.i18n.t('targets.no_data')"></div>
+              </div>
+              <div class="noc-group" x-text="t.group"></div>
+            </div>
+          </template>
+        </div>
+
+        <div class="noc-hidden-bar" x-show="!loading && hiddenTiles.length">
+          <span class="muted" style="font-size:.85rem; margin-right:.4rem;" x-text="$store.i18n.t('monitor.hidden') + ':'"></span>
+          <template x-for="t in hiddenTiles" :key="t.id">
+            <span class="noc-chip" @click="unhide(t)">
+              <span aria-hidden="true">＋</span> <span x-text="t.label"></span>
+            </span>
+          </template>
+        </div>
+      </div>
+    </section>
+
     <!-- Targets tab -->
     <section x-show="tab==='targets'" x-data="targetsApp()" x-init="init()">
       <div class="spread" style="margin-bottom:1rem;">

@@ -19,12 +19,19 @@
       "lang.es": "Español",
       "lang.pt": "Português",
 
+      "nav.monitor": "Monitor",
       "nav.targets": "Targets",
       "nav.alerts": "Alerts",
       "nav.analyzer": "AI Analysis",
       "nav.settings": "Settings",
       "nav.smokeping": "Smokeping graphs",
       "nav.logout": "Log out",
+
+      "monitor.empty": "No targets on the monitor. Add targets, or bring some back from “Hidden” below.",
+      "monitor.hide": "Remove from monitor",
+      "monitor.hidden": "Hidden",
+      "monitor.fullscreen": "Fullscreen",
+      "monitor.exit_fullscreen": "Exit fullscreen",
 
       "common.save": "Save",
       "common.cancel": "Cancel",
@@ -257,12 +264,19 @@
       "lang.es": "Español",
       "lang.pt": "Português",
 
+      "nav.monitor": "Monitor",
       "nav.targets": "Destinos",
       "nav.alerts": "Alertas",
       "nav.analyzer": "Análisis IA",
       "nav.settings": "Ajustes",
       "nav.smokeping": "Gráficas Smokeping",
       "nav.logout": "Cerrar sesión",
+
+      "monitor.empty": "No hay destinos en el monitor. Agrega destinos o recupera alguno desde «Ocultos» abajo.",
+      "monitor.hide": "Quitar del monitor",
+      "monitor.hidden": "Ocultos",
+      "monitor.fullscreen": "Pantalla completa",
+      "monitor.exit_fullscreen": "Salir de pantalla completa",
 
       "common.save": "Guardar",
       "common.cancel": "Cancelar",
@@ -495,12 +509,19 @@
       "lang.es": "Español",
       "lang.pt": "Português",
 
+      "nav.monitor": "Monitor",
       "nav.targets": "Alvos",
       "nav.alerts": "Alertas",
       "nav.analyzer": "Análise IA",
       "nav.settings": "Configurações",
       "nav.smokeping": "Gráficos Smokeping",
       "nav.logout": "Sair",
+
+      "monitor.empty": "Nenhum alvo no monitor. Adicione alvos ou traga algum de volta em “Ocultos” abaixo.",
+      "monitor.hide": "Remover do monitor",
+      "monitor.hidden": "Ocultos",
+      "monitor.fullscreen": "Tela cheia",
+      "monitor.exit_fullscreen": "Sair da tela cheia",
 
       "common.save": "Salvar",
       "common.cancel": "Cancelar",

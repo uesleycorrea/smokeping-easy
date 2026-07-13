@@ -70,6 +70,10 @@ DEFAULTS: dict[str, Any] = {
         "language": "es",
         "timezone": DEFAULT_TIMEZONE,
     },
+    "monitor": {
+        "order": [],    # ordered target ids shown on the NOC monitor
+        "hidden": [],   # target ids excluded from the monitor
+    },
 }
 
 
@@ -217,4 +221,5 @@ def get_public_settings() -> dict:
             "language": app_.get("language", "es"),
             "timezone": app_.get("timezone", DEFAULT_TIMEZONE),
         },
+        "monitor": data.get("monitor", {"order": [], "hidden": []}),
     }

@@ -311,6 +311,52 @@ async def list_targets(_s: auth.Session = Depends(require_session)):
     return {"targets": config_writer.load_targets()}
 
 
+# --- Monitor (NOC screen) --------------------------------------------------
+
+
+class MonitorBody(BaseModel):
+    order: list[str] | None = None
+    hidden: list[str] | None = None
+
+
+@app.get("/api/monitor")
+def get_monitor(_s: auth.Session = Depends(require_session)):
+    # Sync route -> threadpool (reads one RRD sample per target).
+    targets = config_writer.load_targets()
+    mon = settings_mod.load().get("monitor", {"order": [], "hidden": []})
+    tiles = []
+    for t in targets:
+        tiles.append({
+            "id": t["id"],
+            "label": t.get("label"),
+            "host": t.get("host"),
+            "group": t.get("group"),
+            "latency_threshold_ms": t.get("latency_threshold_ms"),
+            "loss_threshold_pct": t.get("loss_threshold_pct"),
+            "latest": rrd_reader.get_latest(t),
+        })
+    return {
+        "order": mon.get("order", []),
+        "hidden": mon.get("hidden", []),
+        "targets": tiles,
+    }
+
+
+@app.put("/api/settings/monitor")
+async def update_monitor(body: MonitorBody, _s: auth.Session = Depends(require_session)):
+    valid = {t["id"] for t in config_writer.load_targets()}
+    updates: dict = {}
+    if body.order is not None:
+        # keep only known ids, de-duplicated, preserving order
+        seen: set = set()
+        updates["order"] = [i for i in body.order if i in valid and not (i in seen or seen.add(i))]
+    if body.hidden is not None:
+        updates["hidden"] = [i for i in set(body.hidden) if i in valid]
+    if updates:
+        settings_mod.update_section("monitor", updates)
+    return settings_mod.load().get("monitor", {"order": [], "hidden": []})
+
+
 # --- Groups ----------------------------------------------------------------
 
 

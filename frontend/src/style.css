@@ -220,6 +220,64 @@ td.num { font-variant-numeric: tabular-nums; }
 .inline-err { color: var(--danger); font-size: .85rem; margin-top: .5em; }
 .inline-ok { color: var(--ok); font-size: .85rem; margin-top: .5em; }
 
+/* --- Monitor (NOC) tiles ------------------------------------------------ */
+.noc-root { background: var(--bg); }
+.noc-root.is-fullscreen { padding: 1.2rem 1.4rem; overflow-y: auto; }
+.noc-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.noc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+.noc-tile {
+  position: relative;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-left: 7px solid var(--border-strong);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.2rem 1.1rem;
+  cursor: grab;
+  user-select: none;
+  transition: transform .05s, box-shadow .15s;
+}
+.noc-tile:active { cursor: grabbing; }
+.noc-tile.ok      { border-left-color: var(--ok); }
+.noc-tile.warn    { border-left-color: var(--warn); background: linear-gradient(90deg, var(--warn-soft) 0%, var(--bg-elev) 60%); }
+.noc-tile.down    { border-left-color: var(--danger); background: linear-gradient(90deg, var(--danger-soft) 0%, var(--bg-elev) 60%); }
+.noc-tile.nodata  { border-left-color: var(--text-faint); opacity: .8; }
+.noc-tile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.noc-label { font-size: 1.15rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; }
+.noc-host { font-family: var(--mono); font-size: .82rem; color: var(--text-soft); margin-top: .1rem; }
+.noc-metrics { display: flex; align-items: baseline; gap: 1.1rem; margin-top: .7rem; flex-wrap: wrap; }
+.noc-latency { font-size: 2.3rem; font-weight: 750; font-variant-numeric: tabular-nums; line-height: 1; }
+.noc-latency small { font-size: .95rem; font-weight: 600; color: var(--text-soft); margin-left: .15em; }
+.noc-loss { font-size: 1.05rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.noc-tile.down .noc-latency, .noc-tile.down .noc-loss { color: var(--danger); }
+.noc-tile.warn .noc-loss { color: var(--warn); }
+.noc-group { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); font-weight: 700; margin-top: .55rem; }
+.noc-hide {
+  appearance: none; border: none; background: var(--bg-sunken); color: var(--text-soft);
+  width: 26px; height: 26px; border-radius: 6px; cursor: pointer; line-height: 1; font-size: 1rem;
+  opacity: 0; transition: opacity .12s; flex: none;
+}
+.noc-tile:hover .noc-hide { opacity: 1; }
+.noc-hide:hover { background: var(--danger-soft); color: var(--danger); }
+.noc-hidden-bar { margin-top: 1.4rem; }
+.noc-chip {
+  display: inline-flex; align-items: center; gap: .4em; font-size: .85rem; font-weight: 600;
+  padding: .35em .7em; border-radius: 999px; background: var(--bg-sunken); border: 1px solid var(--border);
+  color: var(--text-soft); cursor: pointer; margin: .25rem .35rem .25rem 0;
+}
+.noc-chip:hover { border-color: var(--brand); color: var(--brand); }
+
+/* Larger tiles when the monitor is fullscreen on a TV. */
+.noc-root.is-fullscreen .noc-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.3rem; }
+.noc-root.is-fullscreen .noc-label { font-size: 1.5rem; }
+.noc-root.is-fullscreen .noc-latency { font-size: 3.2rem; }
+.noc-root.is-fullscreen .noc-loss { font-size: 1.4rem; }
+.noc-root.is-fullscreen .noc-host { font-size: 1rem; }
+
 /* --- Footer / GPL badge ------------------------------------------------- */
 .app-footer { display: flex; justify-content: center; padding: 1.4rem 1rem 2rem; }
 .gpl-badge {
