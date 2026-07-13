@@ -5,11 +5,12 @@ function monitorApp() {
   return {
     loading: true,
     tiles: [],          // all targets with their latest sample
-    order: [],          // saved display order (target ids)
+    order: [],          // saved tile order (within their group)
     hidden: [],         // target ids excluded from the monitor
+    group_order: [],    // saved group section order
     fullscreen: false,
-    dragId: null,
-    showHidden: false,
+    dragId: null,       // tile being dragged
+    dragGroup: null,    // group header being dragged
     _timer: null,
 
     t(k, p) { return this.$store.i18n.t(k, p); },
@@ -35,6 +36,7 @@ function monitorApp() {
         this.tiles = m.targets || [];
         this.order = m.order || [];
         this.hidden = m.hidden || [];
+        this.group_order = m.group_order || [];
       } catch (e) { /* keep previous */ } finally {
         this.loading = false;
       }
@@ -57,6 +59,24 @@ function monitorApp() {
     get hiddenTiles() {
       const hidden = new Set(this.hidden);
       return this.tiles.filter((t) => hidden.has(t.id));
+    },
+
+    // Visible tiles bucketed into group sections, ordered by group_order.
+    get groupedTiles() {
+      const groups = {};
+      const firstSeen = [];
+      this.visibleTiles.forEach((t) => {
+        const name = t.group || "Default";
+        if (!groups[name]) { groups[name] = { name, tiles: [] }; firstSeen.push(name); }
+        groups[name].tiles.push(t);
+      });
+      const out = [];
+      const placed = new Set();
+      (this.group_order || []).forEach((name) => {
+        if (groups[name]) { out.push(groups[name]); placed.add(name); }
+      });
+      firstSeen.forEach((name) => { if (!placed.has(name)) out.push(groups[name]); });
+      return out;
     },
 
     status(t) {
@@ -84,20 +104,44 @@ function monitorApp() {
       try { await Api.put("/api/settings/monitor", patch); } catch (e) {}
     },
 
+    // --- Tile drag (reorder within the same group) -------------------------
     onDragStart(id, ev) {
       this.dragId = id;
+      this.dragGroup = null;
       if (ev && ev.dataTransfer) ev.dataTransfer.effectAllowed = "move";
     },
     onDrop(targetId) {
       const from = this.dragId;
       this.dragId = null;
       if (!from || from === targetId) return;
+      const byId = {};
+      this.tiles.forEach((t) => { byId[t.id] = t; });
+      // Only reorder within the same group (avoids accidental group changes).
+      if (!byId[from] || !byId[targetId] || byId[from].group !== byId[targetId].group) return;
       const ids = this.visibleTiles.map((t) => t.id);
       const i = ids.indexOf(from), j = ids.indexOf(targetId);
       if (i < 0 || j < 0) return;
       ids.splice(j, 0, ids.splice(i, 1)[0]);
       this.order = ids;
       this._save({ order: ids });
+    },
+
+    // --- Group header drag (reorder group sections) ------------------------
+    onGroupDragStart(name, ev) {
+      this.dragGroup = name;
+      this.dragId = null;
+      if (ev && ev.dataTransfer) ev.dataTransfer.effectAllowed = "move";
+    },
+    onGroupDrop(name) {
+      const from = this.dragGroup;
+      this.dragGroup = null;
+      if (!from || from === name) return;
+      const names = this.groupedTiles.map((g) => g.name);
+      const i = names.indexOf(from), j = names.indexOf(name);
+      if (i < 0 || j < 0) return;
+      names.splice(j, 0, names.splice(i, 1)[0]);
+      this.group_order = names;
+      this._save({ group_order: names });
     },
 
     // --- Fullscreen --------------------------------------------------------

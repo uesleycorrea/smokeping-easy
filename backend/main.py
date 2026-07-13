@@ -317,13 +317,14 @@ async def list_targets(_s: auth.Session = Depends(require_session)):
 class MonitorBody(BaseModel):
     order: list[str] | None = None
     hidden: list[str] | None = None
+    group_order: list[str] | None = None
 
 
 @app.get("/api/monitor")
 def get_monitor(_s: auth.Session = Depends(require_session)):
     # Sync route -> threadpool (reads one RRD sample per target).
     targets = config_writer.load_targets()
-    mon = settings_mod.load().get("monitor", {"order": [], "hidden": []})
+    mon = settings_mod.load().get("monitor", {})
     tiles = []
     for t in targets:
         tiles.append({
@@ -338,6 +339,7 @@ def get_monitor(_s: auth.Session = Depends(require_session)):
     return {
         "order": mon.get("order", []),
         "hidden": mon.get("hidden", []),
+        "group_order": mon.get("group_order", []),
         "targets": tiles,
     }
 
@@ -352,9 +354,15 @@ async def update_monitor(body: MonitorBody, _s: auth.Session = Depends(require_s
         updates["order"] = [i for i in body.order if i in valid and not (i in seen or seen.add(i))]
     if body.hidden is not None:
         updates["hidden"] = [i for i in set(body.hidden) if i in valid]
+    if body.group_order is not None:
+        seen2: set = set()
+        updates["group_order"] = [
+            g for g in body.group_order
+            if isinstance(g, str) and g and not (g in seen2 or seen2.add(g))
+        ][:200]
     if updates:
         settings_mod.update_section("monitor", updates)
-    return settings_mod.load().get("monitor", {"order": [], "hidden": []})
+    return settings_mod.load().get("monitor", {"order": [], "hidden": [], "group_order": []})
 
 
 # --- Groups ----------------------------------------------------------------

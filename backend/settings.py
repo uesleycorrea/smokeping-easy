@@ -71,8 +71,9 @@ DEFAULTS: dict[str, Any] = {
         "timezone": DEFAULT_TIMEZONE,
     },
     "monitor": {
-        "order": [],    # ordered target ids shown on the NOC monitor
-        "hidden": [],   # target ids excluded from the monitor
+        "order": [],        # ordered target ids (within their group)
+        "hidden": [],       # target ids excluded from the monitor
+        "group_order": [],  # ordered group names (section order on the monitor)
     },
 }
 
@@ -221,5 +222,5 @@ def get_public_settings() -> dict:
             "language": app_.get("language", "es"),
             "timezone": app_.get("timezone", DEFAULT_TIMEZONE),
         },
-        "monitor": data.get("monitor", {"order": [], "hidden": []}),
+        "monitor": data.get("monitor", {"order": [], "hidden": [], "group_order": []}),
     }

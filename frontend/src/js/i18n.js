@@ -32,6 +32,7 @@
       "monitor.hidden": "Hidden",
       "monitor.fullscreen": "Fullscreen",
       "monitor.exit_fullscreen": "Exit fullscreen",
+      "monitor.drag_group": "Drag to reorder groups",
 
       "common.save": "Save",
       "common.cancel": "Cancel",
@@ -277,6 +278,7 @@
       "monitor.hidden": "Ocultos",
       "monitor.fullscreen": "Pantalla completa",
       "monitor.exit_fullscreen": "Salir de pantalla completa",
+      "monitor.drag_group": "Arrastra para reordenar los grupos",
 
       "common.save": "Guardar",
       "common.cancel": "Cancelar",
@@ -522,6 +524,7 @@
       "monitor.hidden": "Ocultos",
       "monitor.fullscreen": "Tela cheia",
       "monitor.exit_fullscreen": "Sair da tela cheia",
+      "monitor.drag_group": "Arraste para reordenar os grupos",
 
       "common.save": "Salvar",
       "common.cancel": "Cancelar",

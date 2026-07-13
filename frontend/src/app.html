@@ -100,29 +100,40 @@
           <div class="empty"><p x-text="$store.i18n.t('monitor.empty')"></p></div>
         </template>
 
-        <div class="noc-grid" x-show="!loading && visibleTiles.length">
-          <template x-for="t in visibleTiles" :key="t.id">
-            <div class="noc-tile" :class="status(t)" draggable="true"
-                 @dragstart="onDragStart(t.id, $event)" @dragover.prevent @drop="onDrop(t.id)">
-              <div class="noc-tile-head">
-                <div style="min-width:0;">
-                  <div class="noc-label" x-text="t.label"></div>
-                  <div class="noc-host" x-text="t.host"></div>
-                </div>
-                <button class="noc-hide" @click="hide(t)" @dragstart.stop.prevent :title="$store.i18n.t('monitor.hide')">✕</button>
+        <div x-show="!loading && visibleTiles.length">
+          <template x-for="g in groupedTiles" :key="g.name">
+            <div class="noc-group-section">
+              <div class="noc-group-header" draggable="true"
+                   @dragstart="onGroupDragStart(g.name, $event)" @dragover.prevent @drop="onGroupDrop(g.name)"
+                   :title="$store.i18n.t('monitor.drag_group')">
+                <span class="noc-group-name" x-text="g.name"></span>
+                <span class="noc-group-count" x-text="g.tiles.length"></span>
               </div>
-              <div class="noc-metrics">
-                <div class="noc-latency">
-                  <span x-text="(t.latest && t.latest.avg_latency_ms != null) ? fmt(t.latest.avg_latency_ms) : '—'"></span><small x-text="$store.i18n.t('unit.ms')"></small>
-                </div>
-                <div class="noc-loss" x-show="t.latest && t.latest.loss_pct != null">
-                  <span x-text="fmt(t.latest && t.latest.loss_pct) + '%'"></span>
-                  <span class="muted" style="font-weight:500; font-size:.8rem;" x-text="$store.i18n.t('targets.loss').toLowerCase()"></span>
-                </div>
-                <div class="noc-loss muted" x-show="!(t.latest && (t.latest.avg_latency_ms != null || t.latest.loss_pct != null))"
-                     style="font-size:.9rem; font-weight:500;" x-text="$store.i18n.t('targets.no_data')"></div>
+              <div class="noc-grid">
+                <template x-for="t in g.tiles" :key="t.id">
+                  <div class="noc-tile" :class="status(t)" draggable="true"
+                       @dragstart="onDragStart(t.id, $event)" @dragover.prevent @drop="onDrop(t.id)">
+                    <div class="noc-tile-head">
+                      <div style="min-width:0;">
+                        <div class="noc-label" x-text="t.label"></div>
+                        <div class="noc-host" x-text="t.host"></div>
+                      </div>
+                      <button class="noc-hide" @click="hide(t)" @dragstart.stop.prevent :title="$store.i18n.t('monitor.hide')">✕</button>
+                    </div>
+                    <div class="noc-metrics">
+                      <div class="noc-latency">
+                        <span x-text="(t.latest && t.latest.avg_latency_ms != null) ? fmt(t.latest.avg_latency_ms) : '—'"></span><small x-text="$store.i18n.t('unit.ms')"></small>
+                      </div>
+                      <div class="noc-loss" x-show="t.latest && t.latest.loss_pct != null">
+                        <span x-text="fmt(t.latest && t.latest.loss_pct) + '%'"></span>
+                        <span class="muted" style="font-weight:500; font-size:.8rem;" x-text="$store.i18n.t('targets.loss').toLowerCase()"></span>
+                      </div>
+                      <div class="noc-loss muted" x-show="!(t.latest && (t.latest.avg_latency_ms != null || t.latest.loss_pct != null))"
+                           style="font-size:.9rem; font-weight:500;" x-text="$store.i18n.t('targets.no_data')"></div>
+                    </div>
+                  </div>
+                </template>
               </div>
-              <div class="noc-group" x-text="t.group"></div>
             </div>
           </template>
         </div>
